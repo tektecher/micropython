@@ -43,6 +43,70 @@
 #include "lib/utils/pyexec.h"
 #include "genhdr/mpversion.h"
 
+#include "py/runtime.h"
+#include "py/mperrno.h"
+#include "extmod/vfs.h"
+#include "mphalport.h"
+#include "modesp32.h"
+#include "esp_ota_ops.h"
+
+#include "lib/littlefs/lfs2.h"
+
+#define PARTITION_SIZE   (0x200000)
+#define BLOCK_SIZE_BYTES (4096)
+#define BLOCK_COUNT      (PARTITION_SIZE / BLOCK_SIZE_BYTES)
+
+const esp_partition_t *part;
+
+int block_read(const struct lfs2_config *c, lfs2_block_t block, lfs2_off_t off, void *buffer, lfs2_size_t size) {
+    //printf("Read: block: %d, offset: %d\n", block, off);
+    // memcpy(buffer, &vRAM[(block * BLOCK_SIZE_BYTES) + off], size);
+    esp_err_t err = esp_partition_read(part, (block * BLOCK_SIZE_BYTES) + off, buffer, size);
+    // mp_hal_stdout_tx_str("Read\r\n");
+
+    return 0;
+}
+
+int block_prog(const struct lfs2_config *c, lfs2_block_t block, lfs2_off_t off, const void *buffer, lfs2_size_t size) {
+    //printf("Write: block: %d, offset: %d\n", block, off);
+    //memcpy(&vRAM[(block * BLOCK_SIZE_BYTES) + off], buffer, size);
+    esp_err_t err = esp_partition_write(part, (block * BLOCK_SIZE_BYTES) + off, buffer, size);
+    // mp_hal_stdout_tx_str("Write\r\n");
+
+    return 0;
+}
+
+int block_erase(const struct lfs2_config *c, lfs2_block_t block) {
+    //printf("Erase: block: %d\n", block);
+    // memset(&vRAM[(block * BLOCK_SIZE_BYTES)], 0, BLOCK_SIZE_BYTES);
+    esp_partition_erase_range(part, (block * BLOCK_SIZE_BYTES), BLOCK_SIZE_BYTES);
+
+    return 0;
+}
+
+int block_sync(const struct lfs2_config *c) {
+    //printf("Sync\n");
+    return 0;
+}
+
+// configuration of the filesystem is provided by this struct
+const struct lfs2_config cfg = {
+    // block device operations
+    .read  = block_read,
+    .prog  = block_prog,
+    .erase = block_erase,
+    .sync  = block_sync,
+
+    // block device configuration
+    .read_size = 16,
+    .prog_size = 16,
+    .block_size = BLOCK_SIZE_BYTES,
+    .block_count = BLOCK_COUNT,
+    .cache_size = 16,
+    .lookahead_size = 16,
+    .block_cycles = -1,
+};
+
 pyexec_mode_kind_t pyexec_mode_kind = PYEXEC_MODE_FRIENDLY_REPL;
 int pyexec_system_exit = 0;
 
@@ -519,6 +583,134 @@ friendly_repl_reset:
                 }
             }
             parse_input_kind = MP_PARSE_FILE_INPUT;
+        } else if (ret == CHAR_CTRL_F) {
+            // Upload file mode
+            mp_hal_stdout_tx_str("\r\n\x1F");
+            vstr_reset(&line);
+
+            uint8_t fPathSize = mp_hal_stdin_rx_chr(); // Read Path Size
+            char *fPath = (char*)malloc(fPathSize + 1);
+            memset(fPath, 0, fPathSize + 1);
+            for (uint8_t i=0;i<fPathSize;i++) {
+                fPath[i] = mp_hal_stdin_rx_chr();
+            }
+
+            uint32_t fDataSize = 0;
+            fDataSize |= (uint32_t)(mp_hal_stdin_rx_chr()) << 24;
+            fDataSize |= (uint32_t)(mp_hal_stdin_rx_chr()) << 16;
+            fDataSize |= (uint32_t)(mp_hal_stdin_rx_chr()) << 8;
+            fDataSize |= (uint32_t)(mp_hal_stdin_rx_chr()) << 0;
+
+            uint8_t *fData = (uint8_t*)malloc(fDataSize + 1);
+            memset(fData, 0, fDataSize + 1);
+            for (uint32_t i=0;i<fDataSize;i++) {
+                fData[i] = mp_hal_stdin_rx_chr();
+            }
+            /*
+            mp_hal_stdout_tx_str("File Path: ");
+            mp_hal_stdout_tx_str(fPath);
+            mp_hal_stdout_tx_str("\r\n");
+
+            mp_hal_stdout_tx_str("File Data: ");
+            mp_hal_stdout_tx_str((char*)fData);
+            mp_hal_stdout_tx_str("\r\n");*/
+/*
+            char strBuff[10];
+            sprintf(strBuff, "%2x ", fPathSize);
+            mp_hal_stdout_tx_str(strBuff);
+            for (int i=0;i<fPathSize;i++) {
+                sprintf(strBuff, "%2x ", fPath[i]);
+                mp_hal_stdout_tx_str(strBuff);
+            }
+            for (int i=0;i<4;i++) {
+                sprintf(strBuff, "%2x ", ((uint8_t*)(&fDataSize))[i]);
+                mp_hal_stdout_tx_str(strBuff);
+            }
+            for (int i=0;i<fDataSize;i++) {
+                sprintf(strBuff, "%2x ", fData[i]);
+                mp_hal_stdout_tx_str(strBuff);
+            }
+            */
+            part = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "vfs");
+            if (part) {
+                /*
+                uint8_t buffer[60];
+                esp_err_t err = esp_partition_read(part, 0, buffer, 60);
+                if (err != 0) {
+                    mp_hal_stdout_tx_str("ERROR!\r\n");
+                } else {
+                    char strBuff[10];
+                    for (int i=0;i<60;i++) {
+                        sprintf(strBuff, "%2x ", buffer[i]);
+                        mp_hal_stdout_tx_str(strBuff);
+                    }
+                }*/
+
+                char strBuff[30];
+/*                char buff[80];
+                memset(buff, 0, 80);
+*/
+                lfs2_t lfs;
+
+                int err;
+                err = lfs2_mount(&lfs, &cfg);
+                if (err) {
+                    mp_hal_stdout_tx_str("ERROR Mount\r\n");
+                    sprintf(strBuff, "Code: %d\r\n", err);
+                    mp_hal_stdout_tx_str(strBuff);
+                }
+
+                lfs2_file_t file;
+                lfs2_file_open(&lfs, &file, fPath, LFS2_O_RDWR | LFS2_O_CREAT | LFS2_O_TRUNC);
+                /*mp_hal_stdout_tx_str("File read\r\n");
+                size_t data_len = lfs2_file_read(&lfs, &file, buff, 80);
+                sprintf(strBuff, "Data: \r\n%s\r\n", buff);
+                mp_hal_stdout_tx_str(strBuff);
+                sprintf(strBuff, "Len: %d\r\n", data_len);
+                mp_hal_stdout_tx_str(strBuff);*/
+                lfs2_file_rewind(&lfs, &file);
+                err = lfs2_file_write(&lfs, &file, fData, fDataSize);
+                if (err >= 0) {
+                    mp_hal_stdout_tx_str("OK\r\n");
+                } else {
+                    sprintf(strBuff, "ERROR %d: Write\r\n", err);
+                    mp_hal_stdout_tx_str(strBuff);
+                }
+                lfs2_file_close(&lfs, &file);
+            } else {
+                mp_hal_stdout_tx_str("ERROR: Partition\r\n");
+            }
+
+            free(fPath);
+            free(fData);
+
+            /*
+            for (;;) {
+                char c = mp_hal_stdin_rx_chr();
+                if (state == 0) {
+                    fPathSize = c;
+                    state = 1;
+                } else if (state == )
+                if (c == CHAR_CTRL_C) {
+                    // cancel everything
+                    mp_hal_stdout_tx_str("\r\n");
+                    goto input_restart;
+                } else if (c == CHAR_CTRL_D) {
+                    // end of input
+                    mp_hal_stdout_tx_str("\r\n");
+                    break;
+                } else {
+                    // add char to buffer and echo
+                    vstr_add_byte(&line, c);
+                    if (c == '\r') {
+                        mp_hal_stdout_tx_str("\r\n=== ");
+                    } else {
+                        mp_hal_stdout_tx_strn(&c, 1);
+                    }
+                }
+            }*/
+            // mp_hal_stdout_tx_str("\r\n");
+            continue;
         } else if (vstr_len(&line) == 0) {
             continue;
         } else {

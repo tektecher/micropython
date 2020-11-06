@@ -18,7 +18,7 @@
 #define LFS2_STRINGIZE2(x) #x
 #include LFS2_STRINGIZE(LFS2_CONFIG)
 #else
-
+#include "py/mphal.h"
 // System includes
 #include <stdint.h>
 #include <stdbool.h>
@@ -208,21 +208,25 @@ uint32_t lfs2_crc(uint32_t crc, const void *buffer, size_t size);
 // Allocate memory, only used if buffers are not provided to littlefs
 // Note, memory must be 64-bit aligned
 static inline void *lfs2_malloc(size_t size) {
-#ifndef LFS2_NO_MALLOC
+//    char strBuff[10];
+//    sprintf(strBuff, "Size: %d\r\n", size);
+//    mp_hal_stdout_tx_str(strBuff);
+//#ifndef LFS2_NO_MALLOC
+//mp_hal_stdout_tx_str("malloc\r\n");
     return malloc(size);
-#else
-    (void)size;
-    return NULL;
-#endif
+//#else
+//    (void)size;
+//    return NULL;
+//#endif
 }
 
 // Deallocate memory, only used if buffers are not provided to littlefs
 static inline void lfs2_free(void *p) {
-#ifndef LFS2_NO_MALLOC
+// #ifndef LFS2_NO_MALLOC
     free(p);
-#else
-    (void)p;
-#endif
+// #else
+//    (void)p;
+// #endif
 }
 
 
