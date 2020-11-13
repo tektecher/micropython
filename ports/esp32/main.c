@@ -120,6 +120,9 @@ soft_reset:
 
     // run boot-up scripts
     pyexec_frozen_module("_boot.py");
+#ifdef MICROPY_HW_BOARD_KIDBRIGHT32
+    pyexec_frozen_module("_board_setup.py");
+#endif
     pyexec_file_if_exists("boot.py");
     if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
         pyexec_file_if_exists("main.py");
