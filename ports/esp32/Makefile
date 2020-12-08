@@ -2,6 +2,7 @@
 # then default to GENERIC.
 # BOARD ?= GENERIC
 BOARD ?= KidBright32
+# BOARD ?= IPST-WiFi
 
 # If the build directory is not given, make it reflect the board name.
 BUILD ?= build-$(BOARD)
@@ -43,7 +44,7 @@ include $(TOP)/py/py.mk
 
 GIT_SUBMODULES = lib/berkeley-db-1.xx
 
-PORT ?= /dev/ttyS151
+PORT ?= /dev/ttyS189
 BAUD ?= 1152000
 FLASH_MODE ?= dio
 FLASH_FREQ ?= 40m
