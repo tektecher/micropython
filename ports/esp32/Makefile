@@ -44,7 +44,7 @@ include $(TOP)/py/py.mk
 
 GIT_SUBMODULES = lib/berkeley-db-1.xx
 
-PORT ?= /dev/ttyS189
+PORT ?= /dev/ttyS103
 BAUD ?= 1152000
 FLASH_MODE ?= dio
 FLASH_FREQ ?= 40m
@@ -355,6 +355,7 @@ SRC_C = \
 	mpthreadport.c \
 	machine_rtc.c \
 	machine_sdcard.c \
+	boot_upload.c \
 	$(wildcard $(BOARD_DIR)/*.c) \
 	$(SRC_MOD)
 
