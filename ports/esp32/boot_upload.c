@@ -16,6 +16,9 @@
 #include "rom/uart.h"
 #endif
 
+#include "genhdr/mpversion.h"
+#include "mpconfigboard.h"
+
 #define WAIT_BOOT_TIMEOUT 300
 
 #define PARTITION_SIZE   (0x200000)
@@ -65,7 +68,7 @@ const struct lfs2_config cfg = {
 };
 
 void config_uart_to_upload_mode() {
-    uart_driver_install(UART_NUM_0, 1024 * 2, 0, 0, NULL, 0);
+    uart_driver_install(UART_NUM_0, 1024 * 10, 0, 0, NULL, 0);
     // uart_set_baudrate(UART_NUM_0, 921600); // Change baud to 921600
     uart_set_baudrate(UART_NUM_0, 115200); // Change baud to 115200
 }
@@ -155,7 +158,7 @@ void uploadFlow() {
     }
             
     uart_rx_clear();
-    printf("wait upload\n");
+    printf("upload mode\n");
 
     char *fPath = NULL;
     bool firstTimeFlag = true;
@@ -170,8 +173,11 @@ void uploadFlow() {
         }
 
         if (cmd == 0xFF) { // exit
-            printf("EXIT\n");
+            printf("exit upload mode\n");
             break;
+        } else if (cmd == 0x01) {
+            printf("MicroPython " MICROPY_GIT_TAG " on " MICROPY_BUILD_DATE "; " MICROPY_HW_BOARD_NAME " with " MICROPY_HW_MCU_NAME "\n");
+            continue;
         } else if (cmd == 0x12) { // close
             if (fPath) {
                 free(fPath);
@@ -296,15 +302,14 @@ void uploadFlow() {
     }
 
     lfs2_unmount(&lfs);
-
-    printf("run mode\n");
 }
 
 void boot_upload_run() {
     config_uart_to_upload_mode();
 
-    uart_tx_str("WUP\r\n");
+    printf("wait upload\n");
     uploadFlow();
+    printf("run main program\n");
 
     config_uart_to_run_mode();
 }
