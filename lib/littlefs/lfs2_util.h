@@ -25,9 +25,9 @@
 #include <string.h>
 #include <inttypes.h>
 
-#ifndef LFS2_NO_MALLOC
+// #ifndef LFS2_NO_MALLOC
 #include <stdlib.h>
-#endif
+// #endif
 #ifndef LFS2_NO_ASSERT
 #include <assert.h>
 #endif
@@ -208,21 +208,21 @@ uint32_t lfs2_crc(uint32_t crc, const void *buffer, size_t size);
 // Allocate memory, only used if buffers are not provided to littlefs
 // Note, memory must be 64-bit aligned
 static inline void *lfs2_malloc(size_t size) {
-#ifndef LFS2_NO_MALLOC
+// #ifndef LFS2_NO_MALLOC
     return malloc(size);
-#else
+/*#else
     (void)size;
     return NULL;
-#endif
+#endif */
 }
 
 // Deallocate memory, only used if buffers are not provided to littlefs
 static inline void lfs2_free(void *p) {
-#ifndef LFS2_NO_MALLOC
+// #ifndef LFS2_NO_MALLOC
     free(p);
-#else
+/* #else
     (void)p;
-#endif
+#endif */
 }
 
 

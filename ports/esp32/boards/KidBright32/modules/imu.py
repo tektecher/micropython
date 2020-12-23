@@ -3,6 +3,7 @@
 from machine import Pin, I2C
 import math
 import utime
+import _thread
 
 MPU6050_ADDR = const(0x68)
 LSM303AGR_ACC_ADDR = const(0x19)
@@ -321,3 +322,29 @@ def is_gesture(event, blocking=True):
         return acc[3] > 8000
     else:
         return False
+
+eventCallback = []
+callbackDoingFlag = [ False ] * 11
+for i in range(11):
+    eventCallback += [ [] ]
+
+def on(type, callback):
+    global eventCallback
+    eventCallback[type] += [ callback ]
+
+def IMULoopTask():
+    global callbackDoingFlag
+    while True:
+        update()
+        for inx in range(11):
+            if is_gesture(inx, False): # non-blocking
+                if callbackDoingFlag[inx] == False:
+                    for i in range(len(eventCallback[inx])):
+                        _thread.start_new_thread(eventCallback[inx][i], ())
+                    callbackDoingFlag[inx] = True
+            else:
+                callbackDoingFlag[inx] = False
+
+        utime.sleep_ms(20)
+
+_thread.start_new_thread(IMULoopTask, ())
