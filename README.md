@@ -110,7 +110,6 @@ Read data from IMU sensor on KidBrgiht32 V1.5i by INEX, V1.6 by Gravitech
 ```python
 import imu
 
-imu.update() # read data from sensor
 acc = imu.acc # array of (x, y, z)
 gyro = imu.gyro # array of (x, y, z), only on KidBrgiht32 V1.6 by Gravitech
 mag = imu.mag # array of (x, y, z), only on KidBrgiht32 V1.5i by INEX
@@ -127,6 +126,11 @@ head = imu.heading() # get angle from compass sensor (needs call imu.update() be
 #   - imu.EVENT_FREE_FALL
 if imu.is_gesture(imu.EVENT_SHAKE): # if board is shake
   ...
+  
+def onShake():
+    print("onShake !!!")
+
+imu.on(imu.EVENT_SHAKE, onShake) # Add gesture event handle
 ```
 
 You can see more detail. [Source all module](https://github.com/microBlock-IDE/micropython/tree/V1.0.0/ports/esp32/boards/KidBright32/modules)
