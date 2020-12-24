@@ -134,29 +134,32 @@ def heading():
             calibrate_compass()
         calibrateMagFlag = True
 
-    # use calibration values to shift and scale magnetometer measurements
-    x_mag = (0.0 + mag[0] - mag_min[0]) / (mag_max[0] - mag_min[0]) * 2 - 1
-    y_mag = (0.0 + mag[1] - mag_min[1]) / (mag_max[1] - mag_min[1]) * 2 - 1
-    z_mag = (0.0 + mag[2] - mag_min[2]) / (mag_max[2] - mag_min[2]) * 2 - 1
+    try:
+        # use calibration values to shift and scale magnetometer measurements
+        x_mag = (0.0 + mag[0] - mag_min[0]) / (mag_max[0] - mag_min[0]) * 2 - 1
+        y_mag = (0.0 + mag[1] - mag_min[1]) / (mag_max[1] - mag_min[1]) * 2 - 1
+        z_mag = (0.0 + mag[2] - mag_min[2]) / (mag_max[2] - mag_min[2]) * 2 - 1
 
-    # Normalize acceleration measurements so they range from 0 to 1
-    s = math.sqrt(math.pow(acc[0], 2) + math.pow(acc[1], 2) + math.pow(acc[2], 2))
-    xAccelNorm = acc[0] / s
-    yAccelNorm = acc[1] / s
-    # DF("Acc norm (x, y): (%f, %f)\n", xAccelNorm, yAccelNorm)
+        # Normalize acceleration measurements so they range from 0 to 1
+        s = math.sqrt(math.pow(acc[0], 2) + math.pow(acc[1], 2) + math.pow(acc[2], 2))
+        xAccelNorm = acc[0] / s
+        yAccelNorm = acc[1] / s
+        # DF("Acc norm (x, y): (%f, %f)\n", xAccelNorm, yAccelNorm)
 
-    pitch = math.asin(-xAccelNorm)
-    roll = math.asin(yAccelNorm / math.cos(pitch))
+        pitch = math.asin(-xAccelNorm)
+        roll = math.asin(yAccelNorm / math.cos(pitch))
 
-    # tilt compensated magnetic sensor measurements
-    x_mag_comp = x_mag * math.cos(pitch) + z_mag * math.sin(pitch)
-    y_mag_comp = x_mag * math.sin(roll) * math.sin(pitch) + y_mag * math.cos(roll) - z_mag * math.sin(roll) * math.cos(pitch)
+        # tilt compensated magnetic sensor measurements
+        x_mag_comp = x_mag * math.cos(pitch) + z_mag * math.sin(pitch)
+        y_mag_comp = x_mag * math.sin(roll) * math.sin(pitch) + y_mag * math.cos(roll) - z_mag * math.sin(roll) * math.cos(pitch)
 
-    # arctangent of y/x converted to degrees
-    heading = 180 * math.atan2(x_mag_comp, y_mag_comp) / math.pi
+        # arctangent of y/x converted to degrees
+        heading = 180 * math.atan2(x_mag_comp, y_mag_comp) / math.pi
 
-    heading = (-heading) if heading <= 0 else (360 - heading)
-    return int(heading)
+        heading = (-heading) if heading <= 0 else (360 - heading)
+        return int(heading)
+    except:
+        return 0
 
 
 def calibrate_compass():
@@ -192,7 +195,6 @@ def calibrate_compass():
         if mag[2] > mag_max[2]:
             mag_max[2] = mag[2]
 
-        update()
         (roll, pitch) = rotation()
 
         index_cols = int((roll - -60) * (15 - 0) / (60 - -60) + 0)
