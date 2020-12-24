@@ -3,12 +3,14 @@
 from machine import Pin, I2C, ADC
 
 LM73_ADDR = const(0x4D)
+MAX_VALUE = const(800)
+MIN_VALUE = const(200)
 
 def light():
     adc = ADC(Pin(36))
     adc.atten(ADC.ATTN_11DB)
     adc.width(ADC.WIDTH_12BIT)
-    value = int(100 - (adc.read() / 500 * 100))
+    value = int(100 - ((adc.read() - MIN_VALUE) / (MAX_VALUE - MIN_VALUE) * 100))
     value = 100 if value > 100 else value
     value = 0 if value < 0 else value
     return value
