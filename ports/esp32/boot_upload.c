@@ -187,6 +187,11 @@ void uploadFlow() {
             continue;
         }
 
+        if (cmd != 0x10 && cmd != 0x11) {
+            printf("ERROR: CMD 0x%02x NOT SUPPORT\n", cmd);
+            continue;
+        }
+
         uint8_t dataLenBuff[2];
         len = uart_rx_bytes(dataLenBuff, 2, 100 / portTICK_PERIOD_MS);
         if (len != 2) {
@@ -228,7 +233,7 @@ void uploadFlow() {
             fPath = (char*)malloc(dataLen + 1);
             memset(fPath, 0, dataLen + 1);
             memcpy(fPath, dataBuffer, dataLen);
-            printf("set path to %s\r\n", fPath);
+            printf("set path to %s\n", fPath);
         } else if (cmd == 0x11) { // write content
             if (fPath) {
                 printf("writing %d bytes\n", dataLen);
@@ -248,57 +253,6 @@ void uploadFlow() {
         }
 
         free(dataBuffer);
-/*
-        // Blocking code
-        uint32_t fPathSize = uart_rx_byte();
-        if (fPathSize == 0) {
-            // uart_tx_byte('F'); // Finish byte
-            break;
-        }
-        printf("path size %d\r\n", fPathSize);
-
-        char *fPath = (char*)malloc(fPathSize + 1);
-        memset(fPath, 0, fPathSize + 1);
-        uart_rx_bytes((uint8_t *)fPath, fPathSize, portMAX_DELAY);
-        printf("path %s\r\n", fPath);
-
-        bool firstTimeFlag = true;
-        for (;;) {
-            uint16_t dataLen = 0;
-            dataLen |= ((uint16_t)uart_rx_byte()) << 8;
-            dataLen |= ((uint16_t)uart_rx_byte()) << 0;
-            if (dataLen == 0) {
-                uart_tx_byte('F'); // Finish byte
-                break;
-            }
-            printf("data size %d bytes\n", dataLen);
-
-            uint8_t *dataBuffer = (uint8_t *)malloc(dataLen);
-            if (!dataBuffer) {
-                printf("ERROR: NO RAM\n");
-            }
-            int read_size = uart_rx_bytes(dataBuffer, dataLen, portMAX_DELAY);
-
-            printf("write %d bytes\n", read_size);*/
-/*
-            char *dataContent = (char *)malloc(read_size + 1);
-            memcpy(dataContent, dataBuffer, read_size);
-            dataContent[read_size] = 0;
-            printf("%s : %d\r\n", dataContent, strlen(dataContent));*/
-/*
-            lfs2_file_t file;
-            lfs2_file_open(&lfs, &file, fPath, LFS2_O_RDWR | LFS2_O_CREAT | (firstTimeFlag ? LFS2_O_TRUNC : LFS2_O_APPEND));
-            lfs2_file_write(&lfs, &file, dataBuffer, dataLen);
-            lfs2_file_close(&lfs, &file);
-
-            printf("write end\n");
-
-            // uart_tx_byte('K'); // ASK byte
-            firstTimeFlag = false;
-
-            free(dataBuffer);
-        }
-        free(fPath);*/
     }
 
     lfs2_unmount(&lfs);
