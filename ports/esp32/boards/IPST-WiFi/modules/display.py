@@ -26,7 +26,7 @@ pages = 64 // 8
 
 i2c = I2C(0, scl=Pin(22), sda=Pin(21), freq=100000)
 buffer = bytearray(pages * 128)
-framebuf = framebuf.FrameBuffer(buffer, 128, 64, framebuf.MONO_VLSB)
+fbuff = framebuf.FrameBuffer(buffer, 128, 64, framebuf.MONO_VLSB)
 
 def write_cmd(cmd):
     i2c.writeto(ADDR, bytes([ 0x80, cmd ]))
@@ -59,34 +59,39 @@ def invert(invert):
     write_cmd(SET_NORM_INV | (invert & 1))
 
 def fill(c):
-    framebuf.fill(c)
+    fbuff.fill(c)
 
 def pixel(x, y, c):
-    framebuf.pixel(x, y, c)
+    fbuff.pixel(x, y, c)
 
 def scroll(dx, dy):
-    framebuf.scroll(dx, dy)
+    fbuff.scroll(dx, dy)
 
 def text(string, x, y, c=1):
-    framebuf.text(string, x, y, c)
+    fbuff.text(string, x, y, c)
 
 def hline(x, y, w, c):
-    framebuf.hline(x, y, w, c)
+    fbuff.hline(x, y, w, c)
 
 def vline(x, y, h, c):
-    framebuf.vline(x, y, h, c)
+    fbuff.vline(x, y, h, c)
 
 def line(x1, y1, x2, y2, c):
-    framebuf.line(x1, y1, x2, y2, c)
+    fbuff.line(x1, y1, x2, y2, c)
 
 def rect(x, y, w, h, c):
-    framebuf.rect(x, y, w, h, c)
+    fbuff.rect(x, y, w, h, c)
 
 def fill_rect(x, y, w, h, c):
-    framebuf.fill_rect(x, y, w, h, c)
+    fbuff.fill_rect(x, y, w, h, c)
 
 def blit(fbuf, x, y):
-    framebuf.blit(fbuf, x, y)
+    fbuff.blit(fbuf, x, y)
+
+def image(imageData, x, y):
+    buffer = bytearray(imageData[2:])
+    fbuff.blit(framebuf.FrameBuffer(buffer, int(imageData[0]), int(imageData[1]), framebuf.MONO_HLSB), x, y)
+    buffer = None
 
 setupCMD = (
     SET_DISP | 0x00,  # off
