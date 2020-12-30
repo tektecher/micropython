@@ -308,25 +308,25 @@ def raw(data):
     i2c0.writeto(HT16K33_ADDR, buffer)
 
 def show(value):
+    global displayBuff
     value = str(value)
     value = bytearray(value)
     value = value[-2:] # limit only 2-char
-    buffer = bytearray(16)
-    buffer[0] = 0
-    buffer[1] = 0
-    buffer[2] = 0
-    buffer[3] = 0
+    displayBuff[0] = 0
+    displayBuff[1] = 0
+    displayBuff[2] = 0
+    displayBuff[3] = 0
     if (len(value) >= 2):
         for i in range(6):
-            buffer[i + 4] = font_6_8[((value[0] * 6) + i)]
+            displayBuff[i + 4] = font_6_8[((value[0] * 6) + i)]
         for i in range(6):
-            buffer[i + 4 + 6] = font_6_8[((value[1] * 6) + i)]
+            displayBuff[i + 4 + 6] = font_6_8[((value[1] * 6) + i)]
     else:
         for i in range(6):
-            buffer[i + 4] = 0
+            displayBuff[i + 4] = 0
         for i in range(6):
-            buffer[i + 4 + 6] = font_6_8[((value[0] * 6) + i)]
-    raw(buffer)
+            displayBuff[i + 4 + 6] = font_6_8[((value[0] * 6) + i)]
+    raw(displayBuff)
 
 
 def scroll(value, speed=0.06):
@@ -352,11 +352,11 @@ def clear():
     displayBuff = bytearray(16)
 
 def show4x8(value):
+    global displayBuff
     value = str(value).upper()
     value = bytearray(value)
     value = value[:5]
     value = value[:(5 if b'.' in value else 4)]
-    buffer = bytearray(16)
     nextIndex = 0
     if (len(value) < (5 if b'.' in value else 4)): # fit to right
         nextIndex = nextIndex + (((5 if b'.' in value else 4) - len(value)) * 4)
@@ -377,11 +377,11 @@ def show4x8(value):
             nextIndex = nextIndex + 4
             continue
         for i in range(4):
-            buffer[nextIndex] = font4x8[((charIndex * 4) + i)] | (0x04 if showDotFlag else 0)
+            displayBuff[nextIndex] = font4x8[((charIndex * 4) + i)] | (0x04 if showDotFlag else 0)
             if showDotFlag: 
                 showDotFlag = False
             nextIndex = nextIndex + 1
-    raw(buffer)
+    raw(displayBuff)
 
 def left(value):
     global displayBuff
@@ -469,6 +469,14 @@ def plot(value):
         displayBuff[15] = 0x01 << int(value)
     else:
         displayBuff[15] = 0
+    raw(displayBuff)
+
+def dot(x, y, value):
+    global displayBuff
+    if value:
+        displayBuff[x] = displayBuff[x] | (0x80 >> y)
+    else:
+        displayBuff[x] = displayBuff[x] & ((0x80 >> y) ^ 0xFF)
     raw(displayBuff)
 
 clear()
