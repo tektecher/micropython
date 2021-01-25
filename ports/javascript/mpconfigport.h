@@ -24,6 +24,9 @@
  * THE SOFTWARE.
  */
 
+// Board-specific definitions
+#include "mpconfigboard.h"
+
 #include <stdint.h>
 
 // options to control how MicroPython is built
@@ -32,6 +35,18 @@
 // config option to 0.  If you do this then you won't get a REPL prompt, but you
 // will still be able to execute pre-compiled scripts, compiled with mpy-cross.
 #define MICROPY_ENABLE_COMPILER     (1)
+
+// Python internal features
+/*#define MICROPY_READER_VFS                  (1)
+#define MICROPY_ENABLE_FINALISER            (1)
+#define MICROPY_STACK_CHECK                 (1)*/
+#define MICROPY_ENABLE_EMERGENCY_EXCEPTION_BUF (1)
+#define MICROPY_REPL_EMACS_KEYS             (1)
+#define MICROPY_ERROR_REPORTING             (MICROPY_ERROR_REPORTING_NORMAL)
+#define MICROPY_MODULE_FROZEN_STR           (0)
+#define MICROPY_MODULE_FROZEN_MPY           (1)
+#define MICROPY_QSTR_EXTRA_POOL             mp_qstr_frozen_const_pool
+/*#define MICROPY_VFS                         (1)*/
 
 #define MICROPY_QSTR_BYTES_IN_HASH  (2)
 #define MICROPY_ALLOC_PATH_MAX      (256)
@@ -84,7 +99,7 @@
 #define MICROPY_FLOAT_IMPL          (MICROPY_FLOAT_IMPL_DOUBLE)
 
 #define MICROPY_USE_INTERNAL_PRINTF (0)
-#define MICROPY_ENABLE_PYSTACK      (1)
+// #define MICROPY_ENABLE_PYSTACK      (1)
 #define MICROPY_KBD_EXCEPTION       (1)
 #define MICROPY_PY_UTIME_MP_HAL     (1)
 #define MICROPY_REPL_AUTO_INDENT    (1)
@@ -127,9 +142,11 @@
 #define MP_SSIZE_MAX (0x7fffffff)
 
 extern const struct _mp_obj_module_t mp_module_utime;
+extern const struct _mp_obj_module_t uos_module;
 
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_ROM_QSTR(MP_QSTR_utime), MP_ROM_PTR(&mp_module_utime) }, \
+    { MP_ROM_QSTR(MP_QSTR_uos), MP_ROM_PTR(&uos_module) }, \
 
 // #define MICROPY_EVENT_POLL_HOOK {ets_event_poll();}
 #if MICROPY_PY_THREAD
@@ -189,8 +206,10 @@ typedef long mp_off_t;
 // We need to provide a declaration/definition of alloca()
 #include <alloca.h>
 
-#define MICROPY_HW_BOARD_NAME "JS"
-#define MICROPY_HW_MCU_NAME "Emscripten"
+#ifndef MICROPY_HW_BOARD_NAME
+    #define MICROPY_HW_BOARD_NAME "JS"
+    #define MICROPY_HW_MCU_NAME "Emscripten"
+#endif
 
 #define MP_STATE_PORT MP_STATE_VM
 

@@ -67,5 +67,5 @@ mergeInto(LibraryManager.library, {
                 }
             }
         }
-    },
+    }
 });

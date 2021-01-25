@@ -32,12 +32,14 @@ var mainProgram = function()
   mp_js_do_str = Module.cwrap('mp_js_do_str', 'number', ['string']);
   mp_js_init_repl = Module.cwrap('mp_js_init_repl', 'null', ['null']);
   mp_js_process_char = Module.cwrap('mp_js_process_char', 'number', ['number']);
+  mp_js_soft_rtc_tick = Module.cwrap('mp_js_soft_rtc_tick', 'null', ['null']);
+  mp_switch_value_change_handle = Module.cwrap('mp_switch_value_change_handle', 'null', ['number', 'number']);
 
   MP_JS_EPOCH = (new Date()).getTime();
 
   if (typeof window === 'undefined' && require.main === module) {
       var fs = require('fs');
-      var stack_size = 64 * 1024;
+      var stack_size = 4 * 1024 * 1024;
       var contents = '';
       var repl = true;
 
@@ -56,6 +58,7 @@ var mainProgram = function()
               repl = false;;
           }
       }
+      console.log("Stack size", stack_size / 1024, "kBytes");
       mp_js_init(stack_size);
 
       if (repl) {
@@ -72,6 +75,13 @@ var mainProgram = function()
           process.exitCode = mp_js_do_str(contents);
       }
   }
+
+  setInterval(mp_js_soft_rtc_tick, 1000);
+  /* before_sw_value = 1;
+  setInterval(_ => {
+    mp_switch_value_change_handle(1, before_sw_value);
+    before_sw_value = 1 - before_sw_value;
+  }, 1000); */
 }
 
 Module["onRuntimeInitialized"] = mainProgram;
