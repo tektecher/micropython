@@ -44,7 +44,7 @@ include $(TOP)/py/py.mk
 
 GIT_SUBMODULES = lib/berkeley-db-1.xx
 
-PORT ?= /dev/ttyS103
+PORT ?= /dev/ttyS176
 BAUD ?= 1152000
 FLASH_MODE ?= dio
 FLASH_FREQ ?= 40m
@@ -270,7 +270,7 @@ CFLAGS += -DMICROPY_ESP_IDF_4=1
 endif
 
 # this is what ESPIDF uses for c++ compilation
-CXXFLAGS = -std=gnu++11 $(CFLAGS_COMMON) $(INC) $(INC_ESPCOMP)
+CXXFLAGS = -std=gnu++11 $(CFLAGS_COMMON) $(INC) $(INC_ESPCOMP) $(CXXFLAGS_MOD)
 
 LDFLAGS = -nostdlib -Map=$(@:.elf=.map) --cref
 LDFLAGS += --gc-sections -static -EL
@@ -359,6 +359,9 @@ SRC_C = \
 	$(wildcard $(BOARD_DIR)/*.c) \
 	$(SRC_MOD)
 
+SRC_CXX += \
+	$(SRC_MOD_CXX)
+
 EXTMOD_SRC_C += $(addprefix extmod/,\
 	modonewire.c \
 	)
@@ -381,6 +384,7 @@ DRIVERS_SRC_C = $(addprefix drivers/,\
 OBJ_MP =
 OBJ_MP += $(PY_O)
 OBJ_MP += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
+OBJ_MP += $(addprefix $(BUILD)/, $(SRC_CXX:.cpp=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(EXTMOD_SRC_C:.c=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(LIB_SRC_C:.c=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(DRIVERS_SRC_C:.c=.o))
@@ -389,7 +393,7 @@ OBJ_MP += $(addprefix $(BUILD)/, $(DRIVERS_SRC_C:.c=.o))
 $(OBJ_MP): CFLAGS += -Wdouble-promotion -Wfloat-conversion
 
 # List of sources for qstr extraction
-SRC_QSTR += $(SRC_C) $(EXTMOD_SRC_C) $(LIB_SRC_C) $(DRIVERS_SRC_C)
+SRC_QSTR += $(SRC_C) $(SRC_CXX) $(EXTMOD_SRC_C) $(LIB_SRC_C) $(DRIVERS_SRC_C)
 # Append any auto-generated sources that are needed by sources listed in SRC_QSTR
 SRC_QSTR_AUTO_DEPS +=
 

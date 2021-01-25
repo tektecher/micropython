@@ -124,7 +124,7 @@ soft_reset:
 
     // run boot-up scripts
     pyexec_frozen_module("_boot.py");
-#if defined(MICROPY_HW_BOARD_KIDBRIGHT32) || defined(MICROPY_HW_BOARD_IPSTWIFI)
+#if defined(MICROPY_HW_BOARD_KIDBRIGHT32) || defined(MICROPY_HW_BOARD_IPSTWIFI) || defined(MICROPY_HW_BOARD_TTGO_T_DISPLAY)
     pyexec_frozen_module("_board_setup.py");
 #endif
     pyexec_file_if_exists("boot.py");
