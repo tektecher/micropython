@@ -353,6 +353,7 @@ def clear():
 
 def show4x8(value):
     global displayBuff
+    displayBuff = bytearray(16)
     value = str(value).upper()
     value = bytearray(value)
     value = value[:5]
