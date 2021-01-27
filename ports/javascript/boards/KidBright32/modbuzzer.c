@@ -24,17 +24,21 @@ EM_JS(void, js_audio, (int freq, int duty), {
         simPlayNoteOscillator = null;
     }
 
+    if (typeof simSystem !== "undefined") {
+        simSystem.buzzer.setStatus(duty !== 0);
+    }
+
     if (duty === 0) {
         return;
     }
 
-    playNoteOscillator = playNoteContext.createOscillator();
-    let playNoteGain = playNoteContext.createGain();
+    simPlayNoteOscillator = simPlayNoteContext.createOscillator();
+    let playNoteGain = simPlayNoteContext.createGain();
     playNoteGain.gain.value = duty / 512;
     simPlayNoteOscillator.type = "square";
     simPlayNoteOscillator.frequency.value = freq;
     simPlayNoteOscillator.connect(playNoteGain);
-    playNoteGain.connect(playNoteContext.destination);
+    playNoteGain.connect(simPlayNoteContext.destination);
     simPlayNoteOscillator.start();
 });
 
@@ -151,7 +155,7 @@ const int note_map_freq[] = {
     0
 };
 
-STATIC mp_obj_t buzzer_notes(mp_obj_t notes_obj, mp_obj_t duration_obj) {
+STATIC mp_obj_t buzzer_note(mp_obj_t notes_obj, mp_obj_t duration_obj) {
     const char* notes = mp_obj_str_get_str(notes_obj);
     mp_float_t duration = mp_obj_get_float(duration_obj);
 
@@ -192,7 +196,7 @@ STATIC mp_obj_t buzzer_notes(mp_obj_t notes_obj, mp_obj_t duration_obj) {
 
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_2(buzzer_notes_obj, buzzer_notes);
+MP_DEFINE_CONST_FUN_OBJ_2(buzzer_note_obj, buzzer_note);
 
 STATIC mp_obj_t buzzer_volume(size_t n_args, const mp_obj_t *args) {
     if (n_args == 0) {
@@ -221,7 +225,7 @@ STATIC const mp_rom_map_elem_t buzzer_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_tone), MP_ROM_PTR(&buzzer_tone_obj) },
     { MP_ROM_QSTR(MP_QSTR_on), MP_ROM_PTR(&buzzer_on_obj) },
     { MP_ROM_QSTR(MP_QSTR_off), MP_ROM_PTR(&buzzer_off_obj) },
-    { MP_ROM_QSTR(MP_QSTR_notes), MP_ROM_PTR(&buzzer_notes_obj) },
+    { MP_ROM_QSTR(MP_QSTR_note), MP_ROM_PTR(&buzzer_note_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_volume), MP_ROM_PTR(&buzzer_volume_obj) },
     { MP_ROM_QSTR(MP_QSTR_bpm), MP_ROM_PTR(&buzzer_bpm_obj) },

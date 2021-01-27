@@ -35,8 +35,15 @@
 #include "py/gc.h"
 #include "py/mperrno.h"
 #include "lib/utils/pyexec.h"
+#include "lib/mp-readline/readline.h"
+
+#include "py/mphal.h"
+#include "mpconfigport.h"
 
 #include "library.h"
+
+#include <emscripten.h>
+#include "switch_poll.h"
 
 #if MICROPY_ENABLE_COMPILER
 int do_str(const char *src, mp_parse_input_kind_t input_kind) {
@@ -77,6 +84,13 @@ int mp_js_do_str(const char *code) {
 }
 
 int mp_js_process_char(int c) {
+    if (c == mp_interrupt_char) {
+        mp_keyboard_interrupt();
+        return 0;
+    }
+
+    MICROPY_EVENT_POLL_HOOK
+
     return pyexec_event_repl_process_char(c);
 }
 
@@ -148,3 +162,59 @@ void MP_WEAK __assert_func(const char *file, int line, const char *func, const c
     __fatal_error("Assertion failed");
 }
 #endif
+
+int main() {
+    int stack_dummy;
+    stack_top = (char *)&stack_dummy;
+
+    uint32_t heap_size = 512 * 1024;
+    char *heap = (char *)malloc(heap_size * sizeof(char));
+
+soft_reset:
+    gc_init(heap, heap + heap_size);
+    mp_init();
+    mp_obj_list_init(mp_sys_path, 0);
+    mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_));
+    mp_obj_list_init(mp_sys_argv, 0);
+    readline_init0();
+
+    // run boot-up scripts
+    /* pyexec_frozen_module("_boot.py");
+    pyexec_file_if_exists("boot.py");
+    if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
+        pyexec_file_if_exists("main.py");
+    } */
+
+    pyexec_event_repl_init();
+
+    while (1) {
+        MICROPY_EVENT_POLL_HOOK
+        mp_js_switch_poll();
+
+        int n = EM_ASM_INT({
+            return simSystem.getCharsLenWaitProcass();
+        });
+
+        if (n == 0) {
+            emscripten_sleep(1);
+            continue;
+        }
+
+        int c = EM_ASM_INT({
+            return simSystem.getAndPopFirstCharsWaitProcass();
+        });
+
+        if (c == mp_interrupt_char) {
+            mp_keyboard_interrupt();
+            continue;
+        }
+
+        if (pyexec_event_repl_process_char(c)) {
+            break;
+        }
+    }
+
+    goto soft_reset;
+
+    return 0;
+}

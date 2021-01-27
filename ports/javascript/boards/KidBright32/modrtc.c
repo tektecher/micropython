@@ -2,49 +2,15 @@
 #include <emscripten.h>
 #include "library.h"
 
-static uint8_t year = 0;
-static uint8_t month = 0;
-static uint8_t day = 0;
-static uint8_t hour = 0;
-static uint8_t minute = 0;
-static uint8_t second = 0;
-
-void mp_js_soft_rtc_tick() {
-    second++;
-    if (second >= 60) {
-        second = 0;
-        minute++;
-    }
-    if (minute >= 60) {
-        minute = 0;
-        hour++;
-    }
-    if (hour >= 24) {
-        hour = 0;
-        day++;
-    }
-    if (day >= 30) {
-        day = 0;
-        month++;
-    }
-    if (month >= 12) {
-        month = 0;
-        year++;
-    }
-    if (year >= 100) {
-        year = 0;
-    }
-}
-
 STATIC mp_obj_t rtc_datetime(size_t n_args, const mp_obj_t *args) {
     if (n_args == 0) {
         mp_obj_t level[] = {
-            mp_obj_new_int(year + 2000), // year
-            mp_obj_new_int(month), // month
-            mp_obj_new_int(day), // day
-            mp_obj_new_int(hour), // hour
-            mp_obj_new_int(minute), // minute
-            mp_obj_new_int(second), // second
+            mp_obj_new_int(EM_ASM_INT({ return (new Date(+(new Date()) - simSystem.rtc.setOn + simSystem.rtc.offset)).getFullYear() })), // year
+            mp_obj_new_int(EM_ASM_INT({ return (new Date(+(new Date()) - simSystem.rtc.setOn + simSystem.rtc.offset)).getMonth() + 1 })), // month
+            mp_obj_new_int(EM_ASM_INT({ return (new Date(+(new Date()) - simSystem.rtc.setOn + simSystem.rtc.offset)).getDate() })), // day
+            mp_obj_new_int(EM_ASM_INT({ return (new Date(+(new Date()) - simSystem.rtc.setOn + simSystem.rtc.offset)).getHours() })), // hour
+            mp_obj_new_int(EM_ASM_INT({ return (new Date(+(new Date()) - simSystem.rtc.setOn + simSystem.rtc.offset)).getMinutes() })), // minute
+            mp_obj_new_int(EM_ASM_INT({ return (new Date(+(new Date()) - simSystem.rtc.setOn + simSystem.rtc.offset)).getSeconds() })), // second
             mp_obj_new_int(0), // microsecond
             mp_obj_new_int(0), // tzinfo
         };
@@ -54,12 +20,31 @@ STATIC mp_obj_t rtc_datetime(size_t n_args, const mp_obj_t *args) {
         size_t datetime_len = 0;
         mp_obj_get_array(args[0], &datetime_len, &datetime);
 
-        if (datetime_len >= 1) year = mp_obj_get_int(datetime[0]) % 100;
+        int year = 0;
+        int month = 0;
+        int day = 0;
+        int hour = 0;
+        int minute = 0;
+        int second = 0;
+
+        if (datetime_len >= 1) year = mp_obj_get_int(datetime[0]);
         if (datetime_len >= 2) month = mp_obj_get_int(datetime[1]) % 12;
         if (datetime_len >= 3) day = mp_obj_get_int(datetime[2]) % 32;
         if (datetime_len >= 4) hour = mp_obj_get_int(datetime[3]) % 24;
         if (datetime_len >= 5) minute = mp_obj_get_int(datetime[4]) % 60;
         if (datetime_len >= 6) second = mp_obj_get_int(datetime[5]) % 60;
+
+        EM_ASM({
+            if (!simSystem) {
+                simSystem = {
+                    rtc: {
+                        offset: 0
+                    }
+                };
+            }
+            simSystem.rtc.offset = +(new Date($0, $1, $2, $3, $4, $5, $6));
+            simSystem.rtc.setOn = +(new Date());
+        }, year, month, day, hour, minute, second, 0);
     }
 
     return mp_const_none;

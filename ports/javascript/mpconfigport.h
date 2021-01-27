@@ -137,16 +137,20 @@
 #define MICROPY_CAN_OVERRIDE_BUILTINS (1)
 #define MICROPY_USE_INTERNAL_ERRNO  (1)
 #define MICROPY_ENABLE_SCHEDULER    (1)
-#define MICROPY_SCHEDULER_DEPTH     (1)
+#define MICROPY_SCHEDULER_DEPTH     (16)
+
+#define MICROPY_PY_MACHINE                  (1)
 
 #define MP_SSIZE_MAX (0x7fffffff)
 
 extern const struct _mp_obj_module_t mp_module_utime;
 extern const struct _mp_obj_module_t uos_module;
+extern const struct _mp_obj_module_t mp_module_machine;
 
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_ROM_QSTR(MP_QSTR_utime), MP_ROM_PTR(&mp_module_utime) }, \
     { MP_ROM_QSTR(MP_QSTR_uos), MP_ROM_PTR(&uos_module) }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_machine), (mp_obj_t)&mp_module_machine }, \
 
 // #define MICROPY_EVENT_POLL_HOOK {ets_event_poll();}
 #if MICROPY_PY_THREAD

@@ -24,23 +24,45 @@
  * THE SOFTWARE.
  */
 
+#include <emscripten.h>
+#include <emscripten/html5.h>
+#include <SDL.h>
+#include <stdio.h>
+#include "py/runtime.h"
+
 #include "library.h"
 #include "mphalport.h"
+#include "mpconfigport.h"
+
+#include "switch_poll.h"
 
 void mp_hal_stdout_tx_strn(const char *str, size_t len) {
     mp_js_write(str, len);
 }
 
 void mp_hal_delay_ms(mp_uint_t ms) {
+    /*uint32_t start = mp_hal_ticks_ms();
+    while (mp_hal_ticks_ms() - start < ms) {
+        emscripten_sleep(time_to_next_frame());
+    }
+    */
+    // emscripten_sleep(ms);
     uint32_t start = mp_hal_ticks_ms();
     while (mp_hal_ticks_ms() - start < ms) {
+        MICROPY_EVENT_POLL_HOOK
+        mp_js_switch_poll();
+        
+        if (EM_ASM_INT({ return simSystem.isCharsWaitProcassHasInterruptChar($0) }, mp_interrupt_char)) {
+            mp_keyboard_interrupt();
+        }
+
+        emscripten_sleep(1);
     }
 }
 
 void mp_hal_delay_us(mp_uint_t us) {
     uint32_t start = mp_hal_ticks_us();
-    while (mp_hal_ticks_us() - start < us) {
-    }
+    while (mp_hal_ticks_us() - start < us) { }
 }
 
 mp_uint_t mp_hal_ticks_us(void) {

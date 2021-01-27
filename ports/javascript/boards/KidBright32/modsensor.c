@@ -17,17 +17,17 @@ STATIC mp_obj_t sensor_light() {
 MP_DEFINE_CONST_FUN_OBJ_0(sensor_light_obj, sensor_light);
 
 STATIC mp_obj_t sensor_temperature() {
-    return mp_obj_new_int(EM_ASM_INT({
+    return mp_obj_new_float(EM_ASM_INT({
         if (typeof simSystem !== "undefined") {
             try {
-                return simSystem.lm75.getValue();
+                return simSystem.lm75.getValue() * 100;
             } catch(err) {
                 console.log(err);
             }
         }
 
         return 0;
-    }));
+    }) / 100.0);
 }
 MP_DEFINE_CONST_FUN_OBJ_0(sensor_temperature_obj, sensor_temperature);
 

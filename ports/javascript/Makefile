@@ -39,8 +39,8 @@ FROZEN_MANIFEST ?= boards/manifest.py
 
 include $(TOP)/py/py.mk
 
-CC = emcc -g4
-LD = emcc -g4
+CC = emcc -g4 -O3 -s ASYNCIFY=1 -s 'ASYNCIFY_IMPORTS=["do_sleep_1ms"]'
+LD = emcc -g4 -O3 -s ASYNCIFY=1 -s 'ASYNCIFY_IMPORTS=["do_sleep_1ms"]'
 
 INC += -I.
 INC += -I$(TOP)
@@ -62,7 +62,7 @@ INC += -I$(EMSCRIPTEN)/system/include/emscripten
 INC += -I$(EMSCRIPTEN)/system/include
 
 # CFLAGS = -m32 -Wall -Werror -Wdouble-promotion -Wfloat-conversion $(INC) -std=c99 $(COPT)
-CFLAGS = -m32 -Wall -Werror -Wdouble-promotion -Wfloat-conversion $(INC) $(COPT)
+CFLAGS = -m32 -Wall -Werror -Wdouble-promotion -Wfloat-conversion -I$(EMSCRIPTEN)/system/include/SDL $(INC) $(COPT) 
 # LDFLAGS = -m32 -Wl,-Map=$@.map,--cref -Wl,--gc-sections
 LDFLAGS = 
 
@@ -106,13 +106,13 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 # SRC_QSTR_AUTO_DEPS +=
 
 # JSFLAGS = -O0 -s EXPORTED_FUNCTIONS="['_mp_js_init', '_mp_js_init_repl', '_mp_js_do_str', '_mp_js_process_char', '_mp_hal_get_interrupt_char', '_mp_keyboard_interrupt']" -s EXTRA_EXPORTED_RUNTIME_METHODS="['ccall', 'cwrap']" -s "BINARYEN_TRAP_MODE='clamp'" --memory-init-file 0 --js-library library.js
-JSFLAGS = -O0 -s EXPORTED_FUNCTIONS="['_mp_js_init', '_mp_js_init_repl', '_mp_js_do_str', '_mp_js_process_char', '_mp_hal_get_interrupt_char', '_mp_keyboard_interrupt', '_mp_js_soft_rtc_tick', '_mp_switch_value_change_handle']" -s EXTRA_EXPORTED_RUNTIME_METHODS="['ccall', 'cwrap']" --memory-init-file 0 --js-library library.js
+JSFLAGS = -O0 -s EXPORTED_FUNCTIONS="['_main', '_mp_js_init', '_mp_js_init_repl', '_mp_js_do_str', '_mp_js_process_char', '_mp_hal_get_interrupt_char', '_mp_keyboard_interrupt', '_mp_switch_value_change_handle']" -s EXTRA_EXPORTED_RUNTIME_METHODS="['ccall', 'cwrap']" --memory-init-file 0 --js-library library.js
 
 all: $(BUILD)/micropython.js
 
 $(BUILD)/micropython.js: $(OBJ) library.js wrapper.js
 	$(ECHO) "LINK $(BUILD)/firmware.js"
-	$(Q)emcc $(LDFLAGS) -o $(BUILD)/firmware.js $(OBJ) $(JSFLAGS)
+	$(Q)emcc $(LDFLAGS) -o $(BUILD)/firmware.js $(OBJ) $(JSFLAGS) -s ASYNCIFY=1
 	cat wrapper.js $(BUILD)/firmware.js > $@
 
 min: $(BUILD)/micropython.js

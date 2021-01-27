@@ -2,6 +2,7 @@
 #include <emscripten.h>
 
 #include "mphalport.h"
+#include "mpconfigport.h"
 
 uint8_t SW_Value[2] = { 1, 1 };
 
@@ -10,6 +11,27 @@ mp_obj_t onReleaseCallback[2] = { MP_OBJ_NULL, MP_OBJ_NULL };
 mp_obj_t onPressedCallback[3] = { MP_OBJ_NULL, MP_OBJ_NULL, MP_OBJ_NULL };
 bool pressedFlag[2] = { false, false };
 uint64_t pressStart[2] = { 0, 0 };
+
+void mp_switch_value_change_handle(int pin, int value) ;
+
+void mp_js_switch_poll() {
+    int s1_value = EM_ASM_INT({
+        return simSystem.switch[0].value;
+    });
+
+    int s2_value = EM_ASM_INT({
+        return simSystem.switch[1].value;
+    });
+
+    // EM_ASM_INT({ console.log("SW Poll", $0, $1) }, s1_value, s2_value);
+
+    if (SW_Value[0] != s1_value) {
+        mp_switch_value_change_handle(1, s1_value);
+    }
+    if (SW_Value[1] != s2_value) {
+        mp_switch_value_change_handle(2, s2_value);
+    }
+}
 
 void mp_switch_value_change_handle(int pin, int value) {
     mp_obj_t callback = MP_OBJ_NULL;
@@ -52,6 +74,8 @@ void mp_switch_value_change_handle(int pin, int value) {
             mp_sched_schedule(callback, mp_const_none);
         }
     }
+
+    MICROPY_EVENT_POLL_HOOK
 }
 
 STATIC mp_obj_t switch_value(mp_obj_t pin_obj) {

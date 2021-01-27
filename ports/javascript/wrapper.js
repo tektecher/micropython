@@ -26,12 +26,12 @@
 
 var Module = {};
 
-var mainProgram = function()
+var mainProgram = async function()
 {
   mp_js_init = Module.cwrap('mp_js_init', 'null', ['number']);
-  mp_js_do_str = Module.cwrap('mp_js_do_str', 'number', ['string']);
+  mp_js_do_str = Module.cwrap('mp_js_do_str', 'number', ['string'], { async: true });
   mp_js_init_repl = Module.cwrap('mp_js_init_repl', 'null', ['null']);
-  mp_js_process_char = Module.cwrap('mp_js_process_char', 'number', ['number']);
+  mp_js_process_char = Module.cwrap('mp_js_process_char', 'number', ['number'], { async: true });
   mp_js_soft_rtc_tick = Module.cwrap('mp_js_soft_rtc_tick', 'null', ['null']);
   mp_switch_value_change_handle = Module.cwrap('mp_switch_value_change_handle', 'null', ['number', 'number']);
 
@@ -64,15 +64,15 @@ var mainProgram = function()
       if (repl) {
           mp_js_init_repl();
           process.stdin.setRawMode(true);
-          process.stdin.on('data', function (data) {
+          process.stdin.on('data', async function (data) {
               for (var i = 0; i < data.length; i++) {
-                  if (mp_js_process_char(data[i])) {
+                  if (await mp_js_process_char(data[i])) {
                       process.exit()
                   }
               }
           });
       } else {
-          process.exitCode = mp_js_do_str(contents);
+          process.exitCode = await mp_js_do_str(contents);
       }
   }
 
