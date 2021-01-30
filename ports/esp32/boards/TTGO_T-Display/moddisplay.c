@@ -103,7 +103,7 @@ STATIC mp_obj_t display_line(size_t n_args, const mp_obj_t *args) {
 
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_line_obj, 4, 4, display_line);
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_line_obj, 5, 5, display_line);
 
 STATIC mp_obj_t display_rect(size_t n_args, const mp_obj_t *args) {
     mp_int_t x1 = mp_obj_get_int(args[0]);
@@ -176,7 +176,7 @@ STATIC mp_obj_t display_text(size_t n_args, const mp_obj_t *args) {
         fontIndex = mp_obj_get_int(args[4]);
     }
 
-    dw_font_setfont(&myfont, fonts[fontIndex]);
+    dw_font_setfont(&myfont, (dw_font_info_t *)fonts[fontIndex]);
     dw_font_goto(&myfont, x, y);
     dw_font_print(&myfont, (char *)s);
     
