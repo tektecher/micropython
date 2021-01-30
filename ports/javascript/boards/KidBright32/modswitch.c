@@ -54,7 +54,8 @@ void mp_switch_value_change_handle(int pin, int value) {
     SW_Value[index] = value;
 
     if (callback != MP_OBJ_NULL) {
-        mp_sched_schedule(callback, mp_const_none);
+        // mp_sched_schedule(callback, mp_const_none);
+        mp_call_function_0(callback);
     }
 
     if (SW_Value[0] == 1 && SW_Value[1] == 1) {
@@ -71,7 +72,8 @@ void mp_switch_value_change_handle(int pin, int value) {
         pressedFlag[1] = false;
 
         if (callback != MP_OBJ_NULL) {
-            mp_sched_schedule(callback, mp_const_none);
+            // mp_sched_schedule(callback, mp_const_none);
+            mp_call_function_0(callback);
         }
     }
 

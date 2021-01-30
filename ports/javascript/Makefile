@@ -39,8 +39,8 @@ FROZEN_MANIFEST ?= boards/manifest.py
 
 include $(TOP)/py/py.mk
 
-CC = emcc -g4 -O3 -s ASYNCIFY=1 -s 'ASYNCIFY_IMPORTS=["do_sleep_1ms"]'
-LD = emcc -g4 -O3 -s ASYNCIFY=1 -s 'ASYNCIFY_IMPORTS=["do_sleep_1ms"]'
+CC = emcc -g4 -O3 -s ASYNCIFY=1 -s 'ASYNCIFY_IMPORTS=["do_sleep_1ms"]' --profiling
+LD = emcc -g4 -O3 -s ASYNCIFY=1 -s 'ASYNCIFY_IMPORTS=["do_sleep_1ms"]' --profiling
 
 INC += -I.
 INC += -I$(TOP)
