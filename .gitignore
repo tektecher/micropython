@@ -43,5 +43,11 @@ user.props
 ######################
 genrst/
 
+<<<<<<< HEAD
 # Makefile
 ports/esp32/Makefile
+=======
+# MacOS desktop metadata files
+######################
+.DS_Store
+>>>>>>> 7408ca1d7857df5ea348da35c9ee12f70a024478
