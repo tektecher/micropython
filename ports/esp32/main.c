@@ -82,9 +82,15 @@ void mp_task(void *pvParameter) {
     mp_thread_init(pxTaskGetStackStart(NULL), MP_TASK_STACK_SIZE / sizeof(uintptr_t));
     #endif
 <<<<<<< HEAD
+<<<<<<< HEAD
     
     boot_upload_run();
 
+=======
+    #if CONFIG_USB_ENABLED
+    usb_init();
+    #else
+>>>>>>> 7408ca1d7857df5ea348da35c9ee12f70a024478
 =======
     #if CONFIG_USB_ENABLED
     usb_init();
