@@ -1,3 +1,4 @@
+"""
 from machine import Pin
 import display
 import buzzer
@@ -10,3 +11,4 @@ Pin(12, Pin.OUT).value(1)
 display.clear()
 buzzer.off()
 usb.off()
+"""

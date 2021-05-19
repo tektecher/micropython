@@ -81,21 +81,12 @@ void mp_task(void *pvParameter) {
     #if MICROPY_PY_THREAD
     mp_thread_init(pxTaskGetStackStart(NULL), MP_TASK_STACK_SIZE / sizeof(uintptr_t));
     #endif
-<<<<<<< HEAD
-<<<<<<< HEAD
-    
+
     boot_upload_run();
 
-=======
     #if CONFIG_USB_ENABLED
     usb_init();
     #else
->>>>>>> 7408ca1d7857df5ea348da35c9ee12f70a024478
-=======
-    #if CONFIG_USB_ENABLED
-    usb_init();
-    #else
->>>>>>> 7408ca1d7857df5ea348da35c9ee12f70a024478
     uart_init();
     #endif
     machine_init();
@@ -154,7 +145,7 @@ soft_reset:
 
     // run boot-up scripts
     pyexec_frozen_module("_boot.py");
-#if defined(MICROPY_HW_BOARD_KIDBRIGHT32) || defined(MICROPY_HW_BOARD_IPSTWIFI) || defined(MICROPY_HW_BOARD_TTGO_T_DISPLAY)
+#if defined(MICROPY_HW_BOARD_KIDBRIGHT32) || defined(MICROPY_HW_BOARD_IPSTWIFI) || defined(MICROPY_HW_BOARD_TTGO_T_DISPLAY) || defined(MICROPY_HW_BOARD_RAPBIT32)
     pyexec_frozen_module("_board_setup.py");
 #endif
     pyexec_file_if_exists("boot.py");
