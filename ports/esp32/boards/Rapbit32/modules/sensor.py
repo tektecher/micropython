@@ -1,6 +1,7 @@
 # Dev by Sonthaya Nongnuch
 
-from machine import Pin, ADC
+from machine import Pin, ADC, time_pulse_us
+from time import sleep_us
 
 def light1_raw():
     return analogRead(39)
@@ -12,7 +13,7 @@ def light3_raw():
     return analogRead(33)
 
 __white_threshold = 3000
-__black_threshold = 1500
+__black_threshold = 2000
 def white_threshold(threshold=None):
     if threshold != None:
         __white_threshold = threshold
@@ -69,14 +70,24 @@ def analogRead(pin_n):
     adc.width(ADC.WIDTH_12BIT)
     return adc.read()
 
-def sw1():
-    return 1 - Pin(0, Pin.IN).value()
 
-def sw1_is_press():
-    return False if Pin(0, Pin.IN).value() else True
+trigger = Pin(26, mode=Pin.OUT)
+echo = Pin(27, mode=Pin.IN)
 
-def sw1_is_release():
-    return True if Pin(0, Pin.IN).value() else False
+def distance():
+    trigger.value(0)
+    sleep_us(5)
+    trigger.value(1)
+    sleep_us(10)
+    trigger.value(0)
+
+    try:
+        pulse_time = time_pulse_us(echo, 1, 1000000)
+        d = (pulse_time / 2) / 29.1
+        return int(d) if d < 400 else -1
+    except OSError as ex:
+        return -1
+
 
 """
 # Test only
