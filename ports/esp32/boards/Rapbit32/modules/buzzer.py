@@ -44,7 +44,7 @@ note_map = {
     "SIL": 0
 }
 
-__buzzer = PWM(Pin(13), freq=2000, duty=0)
+__buzzer = PWM(Pin(12), freq=2000, duty=0)
 volume = 50
 bpm = 120
 

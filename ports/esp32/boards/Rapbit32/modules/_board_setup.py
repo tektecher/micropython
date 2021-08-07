@@ -1,12 +1,11 @@
+"""
 from machine import Pin
 import display
 import buzzer
-import usb
 
-Pin(17, Pin.OUT).value(1)
-Pin(2, Pin.OUT).value(1)
-Pin(15, Pin.OUT).value(1)
-Pin(12, Pin.OUT).value(1)
-display.clear()
+Pin(25, Pin.OUT).value(0) # LED2
+Pin(23, Pin.OUT).value(0) # LDE1
+display.fill(0)
+display.show()
 buzzer.off()
-usb.off()
+"""

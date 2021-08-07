@@ -70,6 +70,9 @@ set(MICROPY_SOURCE_PORT
     ${PROJECT_DIR}/mpthreadport.c
     ${PROJECT_DIR}/machine_rtc.c
     ${PROJECT_DIR}/machine_sdcard.c
+    ${PROJECT_DIR}/esp_espnow.c
+    ${PROJECT_DIR}/ring_buffer.c
+    ${PROJECT_DIR}/boot_upload.c
 )
 
 set(MICROPY_SOURCE_QSTR
