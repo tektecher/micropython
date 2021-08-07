@@ -21,7 +21,7 @@ SET_PRECHARGE = const(0xD9)
 SET_VCOM_DESEL = const(0xDB)
 SET_CHARGE_PUMP = const(0x8D)
 
-ADDR = const(0x3C)
+ADDR = const(0x3D)
 pages = 64 // 8
 
 i2c = I2C(0, scl=Pin(22), sda=Pin(21), freq=100000)
