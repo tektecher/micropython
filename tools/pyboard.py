@@ -255,6 +255,7 @@ class Pyboard:
     def __init__(
         self, device, baudrate=115200, user="micro", password="python", wait=0, exclusive=True
     ):
+        self.in_raw_repl = False
         self.use_raw_paste = True
         if device.startswith("exec:"):
             self.serial = ProcessToSerial(device[len("exec:") :])
@@ -321,7 +322,7 @@ class Pyboard:
                 time.sleep(0.01)
         return data
 
-    def enter_raw_repl(self):
+    def enter_raw_repl(self, soft_reset=True):
         self.serial.write(b"\r\x03\x03")  # ctrl-C twice: interrupt any running program
 
         # flush input (without relying on serial.flushInput())
@@ -331,25 +332,33 @@ class Pyboard:
             n = self.serial.inWaiting()
 
         self.serial.write(b"\r\x01")  # ctrl-A: enter raw REPL
-        data = self.read_until(1, b"raw REPL; CTRL-B to exit\r\n>")
-        if not data.endswith(b"raw REPL; CTRL-B to exit\r\n>"):
-            print(data)
-            raise PyboardError("could not enter raw repl")
 
-        self.serial.write(b"\x04")  # ctrl-D: soft reset
-        data = self.read_until(1, b"soft reboot\r\n")
-        if not data.endswith(b"soft reboot\r\n"):
-            print(data)
-            raise PyboardError("could not enter raw repl")
-        # By splitting this into 2 reads, it allows boot.py to print stuff,
-        # which will show up after the soft reboot and before the raw REPL.
+        if soft_reset:
+            data = self.read_until(1, b"raw REPL; CTRL-B to exit\r\n>")
+            if not data.endswith(b"raw REPL; CTRL-B to exit\r\n>"):
+                print(data)
+                raise PyboardError("could not enter raw repl")
+
+            self.serial.write(b"\x04")  # ctrl-D: soft reset
+
+            # Waiting for "soft reboot" independently to "raw REPL" (done below)
+            # allows boot.py to print, which will show up after "soft reboot"
+            # and before "raw REPL".
+            data = self.read_until(1, b"soft reboot\r\n")
+            if not data.endswith(b"soft reboot\r\n"):
+                print(data)
+                raise PyboardError("could not enter raw repl")
+
         data = self.read_until(1, b"raw REPL; CTRL-B to exit\r\n")
         if not data.endswith(b"raw REPL; CTRL-B to exit\r\n"):
             print(data)
             raise PyboardError("could not enter raw repl")
 
+        self.in_raw_repl = True
+
     def exit_raw_repl(self):
         self.serial.write(b"\r\x02")  # ctrl-B: enter friendly REPL
+        self.in_raw_repl = False
 
     def follow(self, timeout, data_consumer=None):
         # wait for normal output
@@ -648,19 +657,39 @@ def main():
     )
     group = cmd_parser.add_mutually_exclusive_group()
     group.add_argument(
+        "--soft-reset",
+        default=True,
+        action="store_true",
+        help="Whether to perform a soft reset when connecting to the board [default]",
+    )
+    group.add_argument(
+        "--no-soft-reset",
+        action="store_false",
+        dest="soft_reset",
+    )
+    group = cmd_parser.add_mutually_exclusive_group()
+    group.add_argument(
         "--follow",
         action="store_true",
+        default=None,
         help="follow the output after running the scripts [default if no scripts given]",
     )
     group.add_argument(
         "--no-follow",
+        action="store_false",
+        dest="follow",
+    )
+    group = cmd_parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--exclusive",
         action="store_true",
-        help="Do not follow the output after running the scripts.",
+        default=True,
+        help="Open the serial device for exclusive access [default]",
     )
     group.add_argument(
         "--no-exclusive",
-        action="store_true",
-        help="Do not try to open the serial device for exclusive access.",
+        action="store_false",
+        dest="exclusive",
     )
     cmd_parser.add_argument(
         "-f",
@@ -675,7 +704,7 @@ def main():
     # open the connection to the pyboard
     try:
         pyb = Pyboard(
-            args.device, args.baudrate, args.user, args.password, args.wait, not args.no_exclusive
+            args.device, args.baudrate, args.user, args.password, args.wait, args.exclusive
         )
     except PyboardError as er:
         print(er)
@@ -686,7 +715,7 @@ def main():
         # we must enter raw-REPL mode to execute commands
         # this will do a soft-reset of the board
         try:
-            pyb.enter_raw_repl()
+            pyb.enter_raw_repl(args.soft_reset)
         except PyboardError as er:
             print(er)
             pyb.close()
@@ -694,13 +723,13 @@ def main():
 
         def execbuffer(buf):
             try:
-                if args.no_follow:
-                    pyb.exec_raw_no_follow(buf)
-                    ret_err = None
-                else:
+                if args.follow is None or args.follow:
                     ret, ret_err = pyb.exec_raw(
                         buf, timeout=None, data_consumer=stdout_write_bytes
                     )
+                else:
+                    pyb.exec_raw_no_follow(buf)
+                    ret_err = None
             except PyboardError as er:
                 print(er)
                 pyb.close()

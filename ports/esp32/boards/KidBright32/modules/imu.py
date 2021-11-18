@@ -8,9 +8,11 @@ import _thread
 MPU6050_ADDR = const(0x68)
 LSM303AGR_ACC_ADDR = const(0x19)
 LSM303AGR_MEG_ADDR = const(0x1E)
+MC3479_ADDR = const(0x6C)
 
 MPU6050 = const(0)
 LSM303AGR = const(1)
+MC3479 = const(2)
 
 acc = [0, 0, 0, 0]
 gyro = [0, 0, 0, 0]
@@ -42,6 +44,8 @@ if MPU6050_ADDR in devAddrs:
     __device = MPU6050
 elif LSM303AGR_ACC_ADDR in devAddrs:
     __device = LSM303AGR
+elif MC3479_ADDR in devAddrs:
+    __device = MC3479
 del devAddrs
 
 if __device == MPU6050:
@@ -55,7 +59,10 @@ elif __device == LSM303AGR:
 
     i2c1.writeto_mem(LSM303AGR_MEG_ADDR, 0x60, b'\x8C')  # CFG_REG_A_M
     i2c1.writeto_mem(LSM303AGR_MEG_ADDR, 0x61, b'\x01')  # CFG_REG_B_M
-
+elif __device == MC3479:
+    i2c1.writeto_mem(MC3479_ADDR, 0x08, b'\x13') # Sample Rate register
+    i2c1.writeto_mem(MC3479_ADDR, 0x20, b'\x20') # Full-scale selection, 8g
+    i2c1.writeto_mem(MC3479_ADDR, 0x07, b'\x01') # Mode Register Controls
 
 def b2i(x, y):
     return (x << 8 | y) if not x & 0x80 else (-(((x ^ 255) << 8) | (y ^ 255) + 1))
@@ -103,6 +110,19 @@ def update():
             mag[i] = b2i(buff[(i * 2) + 1], buff[(i * 2) + 0])
             mag[i] = round(mag[i] * 1.5 * 0.1, 2)
         mag[3] = math.sqrt(math.pow(mag[0], 2) + math.pow(mag[1], 2) + math.pow(mag[2], 2))
+    elif __device == MC3479:
+        buff = i2c1.readfrom_mem(MC3479_ADDR, 0x0D, 6)
+        for i in range(3):
+            acc[i] = b2i(buff[(i * 2) + 1], buff[(i * 2) + 0])
+            acc[i] = round(acc[i] / 4096.0 * 1000.0, 2)
+        x = -acc[0]
+        y = acc[1]
+        z = -acc[2]
+        acc[0] = x
+        acc[1] = y
+        acc[2] = z
+        acc[3] = math.sqrt(math.pow(acc[0], 2) + math.pow(acc[1], 2) + math.pow(acc[2], 2))
+        del x, y, z
 
 def rotation():
     x_g_value = acc[0] / 1000.0 # Acceleration in x-direction in g units
@@ -275,9 +295,9 @@ def is_gesture(event, blocking=True):
     if event == EVENT_SHAKE:
         return acc[3] > 4000
     elif event == EVENT_BOARD_UP:
-        return acc[1] < -600
+        return acc[1] > 600 if __device == MC3479 else acc[1] < -600
     elif event == EVENT_BOARD_DOWN:
-        return acc[1] > 600
+        return acc[1] < -600 if __device == MC3479 else acc[1] > 600
     elif event == EVENT_SCREEN_UP:
         pitch = rotation()[1]
         return pitch >= -30 and pitch <= 30

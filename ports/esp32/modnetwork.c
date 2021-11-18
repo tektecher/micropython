@@ -40,7 +40,7 @@
 #include "py/runtime.h"
 #include "py/mphal.h"
 #include "py/mperrno.h"
-#include "lib/netutils/netutils.h"
+#include "shared/netutils/netutils.h"
 #include "esp_eth.h"
 #include "esp_wifi.h"
 #include "esp_log.h"
@@ -61,6 +61,51 @@
 #endif
 
 #define MODNETWORK_INCLUDE_CONSTANTS (1)
+
+NORETURN void esp_exceptions_helper(esp_err_t e) {
+    switch (e) {
+        case ESP_ERR_WIFI_NOT_INIT:
+            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Wifi Not Initialized"));
+        case ESP_ERR_WIFI_NOT_STARTED:
+            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Wifi Not Started"));
+        case ESP_ERR_WIFI_NOT_STOPPED:
+            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Wifi Not Stopped"));
+        case ESP_ERR_WIFI_IF:
+            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Wifi Invalid Interface"));
+        case ESP_ERR_WIFI_MODE:
+            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Wifi Invalid Mode"));
+        case ESP_ERR_WIFI_STATE:
+            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Wifi Internal State Error"));
+        case ESP_ERR_WIFI_CONN:
+            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Wifi Internal Error"));
+        case ESP_ERR_WIFI_NVS:
+            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Wifi Internal NVS Error"));
+        case ESP_ERR_WIFI_MAC:
+            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Wifi Invalid MAC Address"));
+        case ESP_ERR_WIFI_SSID:
+            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Wifi SSID Invalid"));
+        case ESP_ERR_WIFI_PASSWORD:
+            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Wifi Invalid Password"));
+        case ESP_ERR_WIFI_TIMEOUT:
+            mp_raise_OSError(MP_ETIMEDOUT);
+        case ESP_ERR_WIFI_WAKE_FAIL:
+            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Wifi Wakeup Failure"));
+        case ESP_ERR_WIFI_WOULD_BLOCK:
+            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Wifi Would Block"));
+        case ESP_ERR_WIFI_NOT_CONNECT:
+            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Wifi Not Connected"));
+        case ESP_ERR_TCPIP_ADAPTER_INVALID_PARAMS:
+            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("TCP/IP Invalid Parameters"));
+        case ESP_ERR_TCPIP_ADAPTER_IF_NOT_READY:
+            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("TCP/IP IF Not Ready"));
+        case ESP_ERR_TCPIP_ADAPTER_DHCPC_START_FAILED:
+            mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("TCP/IP DHCP Client Start Failed"));
+        case ESP_ERR_TCPIP_ADAPTER_NO_MEM:
+            mp_raise_OSError(MP_ENOMEM);
+        default:
+            mp_raise_msg_varg(&mp_type_RuntimeError, MP_ERROR_TEXT("Wifi Unknown Error 0x%04x"), e);
+    }
+}
 
 NORETURN void _esp_exceptions(esp_err_t e) {
     switch (e) {
@@ -107,18 +152,7 @@ NORETURN void _esp_exceptions(esp_err_t e) {
     }
 }
 
-static inline void esp_exceptions(esp_err_t e) {
-    if (e != ESP_OK) {
-        _esp_exceptions(e);
-    }
-}
-
 #define ESP_EXCEPTIONS(x) do { esp_exceptions(x); } while (0);
-
-typedef struct _wlan_if_obj_t {
-    mp_obj_base_t base;
-    int if_id;
-} wlan_if_obj_t;
 
 const mp_obj_type_t wlan_if_type;
 STATIC const wlan_if_obj_t wlan_sta_obj = {{&wlan_if_type}, WIFI_IF_STA};
@@ -382,14 +416,6 @@ STATIC mp_obj_t esp_disconnect(mp_obj_t self_in) {
 }
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_disconnect_obj, esp_disconnect);
-
-// Cases similar to ESP8266 user_interface.h
-// Error cases are referenced from wifi_err_reason_t in ESP-IDF
-enum {
-    STAT_IDLE       = 1000,
-    STAT_CONNECTING = 1001,
-    STAT_GOT_IP     = 1010,
-};
 
 STATIC mp_obj_t esp_status(size_t n_args, const mp_obj_t *args) {
     wlan_if_obj_t *self = MP_OBJ_TO_PTR(args[0]);
@@ -799,18 +825,22 @@ STATIC const mp_rom_map_elem_t mp_module_network_globals_table[] = {
     #endif
     { MP_ROM_QSTR(MP_QSTR_AUTH_MAX), MP_ROM_INT(WIFI_AUTH_MAX) },
 
+    #if (ESP_IDF_VERSION_MAJOR == 4) && (ESP_IDF_VERSION_MINOR >= 1) && (CONFIG_IDF_TARGET_ESP32)
     { MP_ROM_QSTR(MP_QSTR_PHY_LAN8720), MP_ROM_INT(PHY_LAN8720) },
-    { MP_ROM_QSTR(MP_QSTR_PHY_TLK110), MP_ROM_INT(PHY_TLK110) },
     { MP_ROM_QSTR(MP_QSTR_PHY_IP101), MP_ROM_INT(PHY_IP101) },
+    { MP_ROM_QSTR(MP_QSTR_PHY_RTL8201), MP_ROM_INT(PHY_RTL8201) },
+    { MP_ROM_QSTR(MP_QSTR_PHY_DP83848), MP_ROM_INT(PHY_DP83848) },
+    #if ESP_IDF_VERSION_MINOR >= 3
+    // PHY_KSZ8041 is new in ESP-IDF v4.3
+    { MP_ROM_QSTR(MP_QSTR_PHY_KSZ8041), MP_ROM_INT(PHY_KSZ8041) },
+    #endif
 
-    // ETH Clock modes from ESP-IDF
-    #if !MICROPY_ESP_IDF_4
-    { MP_ROM_QSTR(MP_QSTR_ETH_CLOCK_GPIO0_IN), MP_ROM_INT(ETH_CLOCK_GPIO0_IN) },
-    // Disabled at Aug 22nd 2018, reenabled Jan 28th 2019 in ESP-IDF
-    // Because we use older SDK, it's currently disabled
-    // { MP_ROM_QSTR(MP_QSTR_ETH_CLOCK_GPIO0_OUT), MP_ROM_INT(ETH_CLOCK_GPIO0_OUT) },
-    { MP_ROM_QSTR(MP_QSTR_ETH_CLOCK_GPIO16_OUT), MP_ROM_INT(ETH_CLOCK_GPIO16_OUT) },
-    { MP_ROM_QSTR(MP_QSTR_ETH_CLOCK_GPIO17_OUT), MP_ROM_INT(ETH_CLOCK_GPIO17_OUT) },
+    { MP_ROM_QSTR(MP_QSTR_ETH_INITIALIZED), MP_ROM_INT(ETH_INITIALIZED)},
+    { MP_ROM_QSTR(MP_QSTR_ETH_STARTED), MP_ROM_INT(ETH_STARTED)},
+    { MP_ROM_QSTR(MP_QSTR_ETH_STOPPED), MP_ROM_INT(ETH_STOPPED)},
+    { MP_ROM_QSTR(MP_QSTR_ETH_CONNECTED), MP_ROM_INT(ETH_CONNECTED)},
+    { MP_ROM_QSTR(MP_QSTR_ETH_DISCONNECTED), MP_ROM_INT(ETH_DISCONNECTED)},
+    { MP_ROM_QSTR(MP_QSTR_ETH_GOT_IP), MP_ROM_INT(ETH_GOT_IP)},
     #endif
 
     { MP_ROM_QSTR(MP_QSTR_STAT_IDLE), MP_ROM_INT(STAT_IDLE)},
