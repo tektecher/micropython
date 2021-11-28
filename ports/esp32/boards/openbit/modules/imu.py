@@ -55,7 +55,7 @@ def update():
     z = acc[2]
     acc[0] = x
     acc[1] = y
-    acc[2] = z
+    acc[2] = -z
     acc[3] = math.sqrt(math.pow(acc[0], 2) + math.pow(acc[1], 2) + math.pow(acc[2], 2))
     del x, y, z
     temp = round(b2i(buff[6], buff[7]) / 340.00 + 36.53, 2)
