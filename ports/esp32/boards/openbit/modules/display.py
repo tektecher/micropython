@@ -102,31 +102,24 @@ font_pendolino3 = bytes([
     0x0, 0x0, 0xc, 0x83, 0x60
 ])
 
-font4x8 = bytes([
-    0x00, 0x7c, 0x44, 0x7c, # 0
-    0x00, 0x00, 0x7c, 0x00, # 1
-    0x00, 0x5c, 0x54, 0x74, # 2
-    0x00, 0x54, 0x54, 0x7c, # 3
-    0x00, 0x70, 0x10, 0x7c, # 4
-    0x00, 0x74, 0x54, 0x5c, # 5
-    0x00, 0x7c, 0x54, 0x5c, # 6
-    0x00, 0x40, 0x40, 0x7c, # 7
-    0x00, 0x7c, 0x54, 0x7c, # 8
-    0x00, 0x74, 0x54, 0x7c, # 9
-    0x00, 0x3c, 0x50, 0x3c, # A
-    0x00, 0x7c, 0x54, 0x38, # B
-    0x00, 0x38, 0x44, 0x44, # C
-    0x00, 0x7c, 0x44, 0x38, # D
-    0x00, 0x7c, 0x54, 0x54, # E
-    0x00, 0x7c, 0x50, 0x50, # F
-    0x00, 0x10, 0x10, 0x10, # -
-    0x00, 0x00, 0x00, 0x00
+font2x5 = bytes([
+    0x00, 0x03, 0x03, 0x03, 0x03, # 0
+    0x01, 0x03, 0x01, 0x01, 0x01, # 1
+    0x03, 0x01, 0x03, 0x02, 0x03, # 2
+    0x03, 0x01, 0x03, 0x01, 0x03, # 3 
+    0x03, 0x03, 0x03, 0x01, 0x01, # 4
+    0x03, 0x02, 0x03, 0x01, 0x03, # 5
+    0x03, 0x02, 0x03, 0x03, 0x03, # 6
+    0x03, 0x01, 0x01, 0x01, 0x01, # 7
+    0x03, 0x03, 0x03, 0x03, 0x03, # 8
+    0x03, 0x03, 0x03, 0x01, 0x03, # 9
+    0x00, 0x00, 0x03, 0x00, 0x00  # -
 ])
 
 np = NeoPixel(Pin(13, Pin.OUT), 25); 
 np.bright = 10
 
-def raw(data):
+def raw(data, color=(255, 0, 0)):
     i = 0
     for row in range(5):
         for col in range(5):
@@ -179,13 +172,44 @@ def clear():
     raw(b'\x00' * 5)
     displayBuff = bytearray(16)
 
+def show2x5(value):
+    global displayBuff
+    displayBuff = bytearray(16)
+    value = str(value).upper()
+    value = bytearray(value)
+    value = value[:3]
+    value = value[:(3 if b'.' in value else 2)]
+    nextIndex = 0
+    if (len(value) < (3 if b'.' in value else 2)): # fit to right
+        nextIndex = nextIndex + (((5 if b'.' in value else 4) - len(value)) * 4)
+    showDotFlag = False
+    for x in range(len(value)):
+        c = value[x]
+        charIndex = 0
+        if c >= ord(b'0') and c <= ord(b'9'):
+            charIndex = c - ord(b'0')
+        elif c == ord(b'-'):
+            charIndex = 10
+        elif c == ord(b'.'):
+            showDotFlag = True
+            continue
+        else:
+            nextIndex = nextIndex + 4
+            continue
+        for i in range(4):
+            displayBuff[nextIndex] = font2x5[((charIndex * 4) + i)] | (0x04 if showDotFlag else 0)
+            if showDotFlag: 
+                showDotFlag = False
+            nextIndex = nextIndex + 1
+    raw(displayBuff)
+
 def plot(value):
     global displayBuff
     for i in range(5):
         displayBuff[i] = (displayBuff[i] << 1) & 0x1F
     value = int(value)
     if value >= 0 and value <= 4:
-        displayBuff[value] = displayBuff[value] | 0x01
+        displayBuff[4 - value] = displayBuff[4 - value] | 0x01
     raw(displayBuff)
 
 def dot(x, y, value):
