@@ -1,0 +1,3 @@
+#define MICROPY_HW_BOARD_NAME "open:bit"
+#define MICROPY_HW_MCU_NAME "ESP32"
+#define MICROPY_HW_BOARD_OPENBIT
