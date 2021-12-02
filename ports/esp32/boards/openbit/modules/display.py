@@ -120,21 +120,15 @@ np = NeoPixel(Pin(13, Pin.OUT), 25);
 np.bright = 10
 
 def raw(data, color=(255, 0, 0)):
-    i = 0
-    for row in range(5):
-        for col in range(5):
-            np[i] = (255, 0, 0) if data[row] & (0x10 >> col) else (0, 0, 0)
-            i = i + 1
+    for y in range(5):
+        for x in range(5):
+            np[x + (y * 5)] = (int(color[0] * np.bright / 100), int(color[1] * np.bright / 100), int(color[2] * np.bright / 100)) if data[y] & (0x10 >> x) else (0, 0, 0)
     np.write()
-
-# raw(b"\x11\xFF\xFF\xFF\xFF")
 
 ASCII_START = const(32)
 ASCII_END = const(126)
 
-displayBuff = bytearray(b'\x00' * 5)
-
-def show(value):
+def show(value, color=(255, 0, 0)):
     global displayBuff
     value = str(value)
     value = bytearray(value)
@@ -143,11 +137,9 @@ def show(value):
     if value < ASCII_START or value > ASCII_END:
         value = bytearray(b"?")[0];
     offset = (value - ASCII_START) * 5;
-    raw(font_pendolino3[offset:(offset + 5)])
+    raw(font_pendolino3[offset:(offset + 5)], color)
 
-# show("A")
-
-def scroll(value, speed=0.06):
+def scroll(value, speed=0.1, color=(255, 0, 0)):
     value = str(value)
     value = bytearray(value)
     buffer = bytearray(5 + (len(value) * 5) + 5)
@@ -163,61 +155,75 @@ def scroll(value, speed=0.06):
         for x in range(5):
             for y in range(5):
                 rawBuffer[y] = (buffer[(i * 5) + y] << x) & 0x1F | (buffer[((i + 1) * 5) + y] & 0x1F) >> (5 - x)
-            raw(rawBuffer)
+            raw(rawBuffer, color)
             sleep(speed)
     clear()
 
-def clear():
-    global displayBuff
-    raw(b'\x00' * 5)
-    displayBuff = bytearray(16)
+def clear(show=True):
+    for y in range(5):
+        for x in range(5):
+            np[x + (y * 5)] = (0, 0, 0)
+    if show:
+        np.write()
 
-def show2x5(value):
-    global displayBuff
-    displayBuff = bytearray(16)
-    value = str(value).upper()
-    value = bytearray(value)
-    value = value[:3]
-    value = value[:(3 if b'.' in value else 2)]
-    nextIndex = 0
-    if (len(value) < (3 if b'.' in value else 2)): # fit to right
-        nextIndex = nextIndex + (((5 if b'.' in value else 4) - len(value)) * 4)
-    showDotFlag = False
-    for x in range(len(value)):
-        c = value[x]
-        charIndex = 0
-        if c >= ord(b'0') and c <= ord(b'9'):
-            charIndex = c - ord(b'0')
-        elif c == ord(b'-'):
-            charIndex = 10
-        elif c == ord(b'.'):
-            showDotFlag = True
-            continue
-        else:
-            nextIndex = nextIndex + 4
-            continue
-        for i in range(4):
-            displayBuff[nextIndex] = font2x5[((charIndex * 4) + i)] | (0x04 if showDotFlag else 0)
-            if showDotFlag: 
-                showDotFlag = False
-            nextIndex = nextIndex + 1
-    raw(displayBuff)
-
-def plot(value):
-    global displayBuff
-    for i in range(5):
-        displayBuff[i] = (displayBuff[i] << 1) & 0x1F
-    value = int(value)
-    if value >= 0 and value <= 4:
-        displayBuff[4 - value] = displayBuff[4 - value] | 0x01
-    raw(displayBuff)
-
-def dot(x, y, value):
-    global displayBuff
-    if value:
-        displayBuff[y] = displayBuff[y] | (0x10 >> x)
+def show2x5(value, color=(255, 0, 0)):
+    value = str(int(value))
+    clear(False)
+    if len(value) >= 2:
+        left(value[0], color, False)
+        right(value[1], color, False)
     else:
-        displayBuff[y] = displayBuff[y] & ((0x10 >> x) ^ 0x1F)
-    raw(displayBuff)
+        right(value[0], color, False)
+    np.write()
 
-clear()
+def left(value, color=(255, 0, 0), show=True):
+    c = bytearray(str(value))[-1]
+    charIndex = 10
+    if c >= ord(b'0') and c <= ord(b'9'):
+        charIndex = c - ord(b'0')
+    elif c == ord(b'-'):
+        charIndex = 10
+    for y in range(5):
+        for x in range(2):
+            np[x + (y * 5)] = (int(color[0] * np.bright / 100), int(color[1] * np.bright / 100), int(color[2] * np.bright / 100)) if font2x5[(charIndex * 5) + y] & (0x02 >> x) else (0, 0, 0)
+    if show:
+        np.write()
+
+def right(value, color=(255, 0, 0), show=True):
+    c = bytearray(str(value))[-1]
+    charIndex = 10
+    if c >= ord(b'0') and c <= ord(b'9'):
+        charIndex = c - ord(b'0')
+    elif c == ord(b'-'):
+        charIndex = 10
+    for y in range(5):
+        for x in range(2):
+            np[3 + x + (y * 5)] = (int(color[0] * np.bright / 100), int(color[1] * np.bright / 100), int(color[2] * np.bright / 100)) if font2x5[(charIndex * 5) + y] & (0x02 >> x) else (0, 0, 0)
+    if show:
+        np.write()
+
+old_data_plot = [ -1, -1, -1, -1, -1 ]
+old_data_color = [ (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0) ]
+
+def plot(value, color=(255, 0, 0)):
+    for i in range(4):
+        old_data_plot[i] = old_data_plot[i + 1]
+        old_data_color[i] = old_data_color[i + 1]
+    old_data_plot[4] = value
+    old_data_color[4] = color
+    for y in range(5):
+        for x in range(5):
+            np[x + (y * 5)] = (0, 0, 0)
+    for x in range(5):
+        if old_data_plot[x] >= 0 and old_data_plot[x] <= 4:
+            dot(x, 4 - old_data_plot[x], old_data_color[x], False)
+    np.write()
+
+def dot(x, y, color=(255, 0, 0), show=True):
+    np[x + (y * 5)] = (int(color[0] * np.bright / 100), int(color[1] * np.bright / 100), int(color[2] * np.bright / 100))
+    if show:
+        np.write()
+
+import ubinascii
+def hex2byte(hex="#ff0000"):
+    return ubinascii.unhexlify(hex[1:])
