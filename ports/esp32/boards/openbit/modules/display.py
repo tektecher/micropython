@@ -122,7 +122,10 @@ np.bright = 10
 def raw(data, color=(255, 0, 0)):
     for y in range(5):
         for x in range(5):
-            np[x + (y * 5)] = (int(color[0] * np.bright / 100), int(color[1] * np.bright / 100), int(color[2] * np.bright / 100)) if data[y] & (0x10 >> x) else (0, 0, 0)
+            if len(data) == 5:
+                np[x + (y * 5)] = (int(color[0] * np.bright / 100), int(color[1] * np.bright / 100), int(color[2] * np.bright / 100)) if data[y] & (0x10 >> x) else (0, 0, 0)
+            else:
+                np[x + (y * 5)] = (int(data[(x + (y * 5)) * 3 + 0] * np.bright / 100), int(data[(x + (y * 5)) * 3 + 1] * np.bright / 100), int(data[(x + (y * 5)) * 3 + 2] * np.bright / 100))
     np.write()
 
 ASCII_START = const(32)
