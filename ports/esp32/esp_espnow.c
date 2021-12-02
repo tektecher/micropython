@@ -192,13 +192,13 @@ STATIC mp_obj_t espnow_init(mp_obj_t _) {
 
     initialized = 1;
 
-    check_esp_err(esp_netif_init());
+    /*check_esp_err(esp_netif_init());
     check_esp_err(esp_event_loop_create_default());
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     check_esp_err( esp_wifi_init(&cfg) );
     check_esp_err( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
     check_esp_err( esp_wifi_set_mode(WIFI_MODE_AP) );
-    check_esp_err( esp_wifi_start());
+    check_esp_err( esp_wifi_start());*/
 
     check_esp_err(esp_now_init());
     check_esp_err(esp_now_register_recv_cb(recv_cb));
