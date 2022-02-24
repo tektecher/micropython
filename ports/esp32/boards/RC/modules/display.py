@@ -1,7 +1,8 @@
 from micropython import const
 import framebuf
 from machine import Pin, I2C
-
+import utime
+import math
 # register definitions
 SET_CONTRAST = const(0x81)
 SET_ENTIRE_ON = const(0xA4)
@@ -88,6 +89,198 @@ def fill_rect(x, y, w, h, c):
 def blit(fbuf, x, y):
     fbuff.blit(fbuf, x, y)
 
+#================= this section under Development========================
+#=====================start of circle==================
+#empty circle 
+def circle(x,y,r,c): 
+    fbuff.pixel(x-r,y,c)
+    fbuff.pixel(x+r,y,c)
+    fbuff.pixel(x,y-r,c)
+    fbuff.pixel(x,y+r,c)
+    for i in range(1,r):
+        a = int(math.sqrt(r*r-i*i))
+        fbuff.pixel(x-a,y-i,c)
+        fbuff.pixel(x+a,y-i,c)
+        fbuff.pixel(x-a,y+i,c)
+        fbuff.pixel(x+a,y+i,c)
+        fbuff.pixel(x-i,y-a,c)
+        fbuff.pixel(x+i,y-a,c)
+        fbuff.pixel(x-i,y+a,c)
+        fbuff.pixel(x+i,y+a,c)
+#filled circle 
+def fill_circle(x,y,r,c): 
+    fbuff.hline(x-r,y,r*2,c)
+    for i in range(1,r):
+        a = int(math.sqrt(r*r-i*i)) # Pythagoras!
+        fbuff.hline(x-a,y+i,a*2,c) # Lower half
+        fbuff.hline(x-a,y-i,a*2,c) # Upper half
+
+#=====================End of circle==================
+ #=====================start of triangle==================
+# Modified from https://github.com/SpiderMaf/PiPicoDsply/blob/main/filled-triangles.py
+# To work on RC display displays
+class Point:
+    def __init__(self,x,y):
+        self.X=x
+        self.Y=y
+    def __str__(self):
+        return "Point(%s,%s)"%(self.X,self.Y)
+class Triangle:
+    def __init__(self,p1,p2,p3):
+        self.P1=p1
+        self.P2=p2
+        self.P3=p3
+
+    def __str__(self):
+        return "Triangle(%s,%s,%s)"%(self.P1,self.P2,self.P3)
+    
+    def draw(self):
+        print("I should draw now")
+        self.fillTri()
+    # Filled triangle routines ported from http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html      
+    def sortVerticesAscendingByY(self):    
+        if self.P1.Y > self.P2.Y:
+            vTmp = self.P1
+            self.P1 = self.P2
+            self.P2 = vTmp
+        
+        if self.P1.Y > self.P3.Y:
+            vTmp = self.P1
+            self.P1 = self.P3
+            self.P3 = vTmp
+
+        if self.P2.Y > self.P3.Y:
+            vTmp = self.P2
+            self.P2 = self.P3
+            self.P3 = vTmp
+        
+    def fillTri(self):
+        self.sortVerticesAscendingByY()
+        if self.P2.Y == self.P3.Y:
+            fillBottomFlatTriangle(self.P1, self.P2, self.P3)
+        else:
+            if self.P1.Y == self.P2.Y:
+                fillTopFlatTriangle(self.P1, self.P2, self.P3)
+            else:
+                newx = int(self.P1.X + (float(self.P2.Y - self.P1.Y) / float(self.P3.Y - self.P1.Y)) * (self.P3.X - self.P1.X))
+                newy = self.P2.Y                
+                pTmp = Point( newx,newy )
+                fillBottomFlatTriangle(self.P1, self.P2, pTmp)
+                fillTopFlatTriangle(self.P2, pTmp, self.P3)
+
+def fillBottomFlatTriangle(p1,p2,p3):
+    slope1 = float(p2.X - p1.X) / float (p2.Y - p1.Y)
+    slope2 = float(p3.X - p1.X) / float (p3.Y - p1.Y)
+
+    x1 = p1.X
+    x2 = p1.X + 0.5
+
+    for scanlineY in range(p1.Y,p2.Y):
+#        lcd.pixel_span(int(x1), scanlineY, int(x2)-int(x1))   # Switch pixel_span() to hline() / Pimoroni to WS
+        fbuff.hline(int(x1),scanlineY, int(x2)-int(x1),c)
+        ##fbuff.display()
+        utime.sleep(0.1)
+        x1 += slope1
+        x2 += slope2
+
+def fillTopFlatTriangle(p1,p2,p3):
+    slope1 = float(p3.X - p1.X) / float(p3.Y - p1.Y)
+    slope2 = float(p3.X - p2.X) / float(p3.Y - p2.Y)
+
+    x1 = p3.X
+    x2 = p3.X + 0.5
+
+    for scanlineY in range (p3.Y,p1.Y-1,-1):
+#        fbuff.pixel_span(int(x1), scanlineY, int(x2)-int(x1))  # Switch pixel_span() to hline() / Pimoroni to WS
+        fbuff.hline(int(x1),scanlineY, int(x2)-int(x1),c)
+        #fbuff.display()
+        utime.sleep(0.1)
+        x1 -= slope1
+        x2 -= slope2
+            
+
+#empty triangle 
+def triangle(x1,y1,x2,y2,x3,y3,c): # Draw outline triangle (empty)
+    fbuff.line(x1,y1,x2,y2,c)
+    fbuff.line(x2,y2,x3,y3,c)
+    fbuff.line(x3,y3,x1,y1,c)
+#filled triangle 
+def fill_triangle(x1,y1,x2,y2,x3,y3,c): # Draw filled triangle
+    t=Triangle(Point(x1,y1),Point(x2,y2),Point(x3,y3)) # Define corners
+    t.fillTri()
+
+# ============== End of Triangles Code ===============
+
+#============== Draw sin() and cos() =================
+
+# def graphs(): # Draw Sine and Cosine graphs
+#     fbuff.fill(0)
+#     #fbuff.display()
+#     factor = 361 /160
+#     fbuff.hline(0,40,160,c=1)    
+#     #fbuff.display()
+#     #sin()
+#     for x in range(0,160):
+#         y = int ((math.sin(math.radians(x * factor)))* -30) + 40
+#         fbuff.pixel(x,y,c=1)
+#         #fbuff.display()
+#     printstring("Sine", 20, 55, 2, 0,0,c)
+#     #fbuff.display()
+#     utime.sleep(3)
+#     #cos()
+#     fbuff.fill(0)
+#     #fbuff.display()
+#     fbuff.hline(0,40,160,c=1)    
+#     #fbuff.display()
+#     for x in range(0,160):
+#         y = int((math.cos(math.radians(x * factor)))* -30) + 40
+#         fbuff.pixel(x,y,c=1)
+#     printstring("Cosine",40,10,2,0,0,c)
+#     #fbuff.display()
+#     utime.sleep(3)
+#     fbuff.fill(0)
+#     #fbuff.display()
+#================================================================
+#sin()
+def Draw_Sin():
+    fbuff.fill(0)
+    factor = 361 /160
+    fbuff.hline(0,40,160,c=1)    
+    for x in range(0,160):
+        y = int ((math.sin(math.radians(x * factor)))* -30) + 40
+        fbuff.pixel(x,y,c=1)
+    utime.sleep(3)   
+
+#cos()
+def Draw_Cos():
+    fbuff.fill(0)
+    factor = 361 /160
+    fbuff.hline(0,40,160,c=1)    
+    for x in range(0,160):
+        y = int((math.cos(math.radians(x * factor)))* -30) + 40
+        fbuff.pixel(x,y,c=1)
+    utime.sleep(3)
+#============= End of graph ==========================
+
+
+
+# will try this if what  is codded is not correct 
+# def circle(x,y,r,color,fill=0):       #A circular function
+#     if(fill==0): empty circle 
+#             for i in range(x-r,x+r+1):
+#                 oled.pixel(i,int(y-math.sqrt(r*r-(x-i)*(x-i))),color)
+#                 oled.pixel(i,int(y+math.sqrt(r*r-(x-i)*(x-i))),color)
+#             for i in range(y-r,y+r+1):
+#                 oled.pixel(int(x-math.sqrt(r*r-(y-i)*(y-i))),i,color)
+#                 oled.pixel(int(x+math.sqrt(r*r-(y-i)*(y-i))),i,color)
+#     else:         filled circle 
+#             for i in range(x-r,x+r+1):
+#                 a=int(math.sqrt(r*r-(x-i)*(x-i)))
+#                 oled.vline(i,y-a,a*2,color)
+
+#             for i in range(y-r,y+r+1):
+#                 a=int(math.sqrt(r*r-(y-i)*(y-i)))
+#                 oled.hline(x-a,i,a*2,color)        
 def image(imageData, x, y):
     buffer = bytearray(imageData[2:])
     fbuff.blit(framebuf.FrameBuffer(buffer, int(imageData[0]), int(imageData[1]), framebuf.MONO_HLSB), x, y)
