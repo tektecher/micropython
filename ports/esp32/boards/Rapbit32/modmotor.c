@@ -64,8 +64,8 @@ void _wheel(int speed_left, int speed_right) {
     }
 }
 
-void _sleep(uint32_t time) {
-    mp_hal_delay_ms(time * 1000);
+void _sleep(mp_float_t time) {
+    mp_hal_delay_ms(time * 1000.0f);
 }
 
 STATIC mp_obj_t motor_init() {
@@ -101,7 +101,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(motor_wheel_obj, motor_wheel);
 
 STATIC mp_obj_t motor_forward(mp_obj_t speed_obj, mp_obj_t time_obj) {
     mp_int_t speed = mp_obj_get_int(speed_obj);
-    mp_int_t time = mp_obj_get_int(time_obj);
+    mp_float_t time = mp_obj_get_float(time_obj);
 
     _wheel(speed, speed);
     _sleep(time);
@@ -113,7 +113,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(motor_forward_obj, motor_forward);
 
 STATIC mp_obj_t motor_backward(mp_obj_t speed_obj, mp_obj_t time_obj) {
     mp_int_t speed = mp_obj_get_int(speed_obj);
-    mp_int_t time = mp_obj_get_int(time_obj);
+    mp_float_t time = mp_obj_get_float(time_obj);
 
     _wheel(speed * -1, speed * -1);
     _sleep(time);
@@ -125,7 +125,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(motor_backward_obj, motor_backward);
 
 STATIC mp_obj_t motor_turn_left(mp_obj_t speed_obj, mp_obj_t time_obj) {
     mp_int_t speed = mp_obj_get_int(speed_obj);
-    mp_int_t time = mp_obj_get_int(time_obj);
+    mp_float_t time = mp_obj_get_float(time_obj);
 
     _wheel(0, speed);
     _sleep(time);
@@ -137,7 +137,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(motor_turn_left_obj, motor_turn_left);
 
 STATIC mp_obj_t motor_turn_right(mp_obj_t speed_obj, mp_obj_t time_obj) {
     mp_int_t speed = mp_obj_get_int(speed_obj);
-    mp_int_t time = mp_obj_get_int(time_obj);
+    mp_float_t time = mp_obj_get_float(time_obj);
 
     _wheel(speed, 0);
     _sleep(time);
