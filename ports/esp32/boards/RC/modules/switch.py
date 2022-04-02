@@ -23,18 +23,6 @@ def __onSwitchChangesValue(pin):
     if pin.value():
         callback = None
         if pin == S1:
-            callback = __s1_release
-        elif pin == S2:
-            callback = __s2_release
-        elif pin == S3:
-            callback = __s3_release
-        elif pin == S4:
-            callback = __s4_release
-        if callback:
-            _thread.start_new_thread(callback, ())
-    else:
-        callback = None
-        if pin == S1:
             callback = __s1_press
         elif pin == S2:
             callback = __s2_press
@@ -42,6 +30,18 @@ def __onSwitchChangesValue(pin):
             callback = __s3_press
         elif pin == S4:
             callback = __s4_press
+        if callback:
+            _thread.start_new_thread(callback, ())
+    else:
+        callback = None
+        if pin == S1:
+            callback = __s1_release
+        elif pin == S2:
+            callback = __s2_release
+        elif pin == S3:
+            callback = __s3_release
+        elif pin == S4:
+            callback = __s4_release
         if callback:
             _thread.start_new_thread(callback, ())
 
@@ -53,7 +53,7 @@ S4.irq(handler=__onSwitchChangesValue, trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING)
 
 
 def value(pin):
-    return 0 if pin.value() else 1
+    return 1 if pin.value() else 0
 
 def press(pin, callback):
     global __s1_press, __s2_press, __s3_press, __s4_press
@@ -105,7 +105,7 @@ def SwitchLoopTask():
         sw4 = S4.value()
 
         # S1
-        if sw1 == 0: # S1 is press
+        if sw1 == 1: # S1 is pressed
             if sw1_press_start == None:
                 sw1_press_start = utime.ticks_ms()
         else:
@@ -115,7 +115,7 @@ def SwitchLoopTask():
                 sw1_press_start = None
         
         # S2
-        if sw2 == 0: # S2 is press
+        if sw2 == 1: # S2 is pressed
             if sw2_press_start == None:
                 sw2_press_start = utime.ticks_ms()
         else:
@@ -125,7 +125,7 @@ def SwitchLoopTask():
                 sw2_press_start = None
 
         # S3
-        if sw3 == 0: # S3 is pressed
+        if sw3 == 1: # S3 is pressed
             if sw3_press_start == None:
                 sw3_press_start = utime.ticks_ms()
         else:
@@ -135,7 +135,7 @@ def SwitchLoopTask():
                 sw3_press_start = None
 
         # S4
-        if sw4 == 0: # S4 is pressed
+        if sw4 == 1: # S4 is pressed
             if sw4_press_start == None:
                 sw4_press_start = utime.ticks_ms()
         else:
@@ -148,32 +148,32 @@ def SwitchLoopTask():
             if sw1_press_flag and sw4_press_flag:
                 if __s14_pressed:
                     _thread.start_new_thread(__s14_pressed, ())
-                sw1_press_flag = False
-                sw4_press_flag = False
+                sw1_press_flag = True
+                sw4_press_flag = True
             elif sw1_press_flag:
                 if __s1_pressed:
                     _thread.start_new_thread(__s1_pressed, ())
-                sw1_press_flag = False
+                sw1_press_flag = True
             elif sw4_press_flag:
                 if __s4_pressed:
                     _thread.start_new_thread(__s4_pressed, ())
-                sw4_press_flag = False
+                sw4_press_flag = True
 
         #s2 and s3 is pressed 
         if sw2 == sw3 == 1:
             if sw2_press_flag and sw3_press_flag:
                 if __s23_pressed:
                     _thread.start_new_thread(__s23_pressed, ())
-                sw2_press_flag = False
-                sw3_press_flag = False
+                sw2_press_flag = True
+                sw3_press_flag = True
             elif sw2_press_flag:
                 if __s2_pressed:
                     _thread.start_new_thread(__s2_pressed, ())
-                sw2_press_flag = False
+                sw2_press_flag = True
             elif sw3_press_flag:
                 if __s3_pressed:
                     _thread.start_new_thread(__s3_pressed, ())
-                sw3_press_flag = False
+                sw3_press_flag = True
 
         utime.sleep_ms(20)
     
@@ -185,14 +185,14 @@ def pressed(pin, callback):
     # switch 1 and 4 
     if pin == S14:
         __s14_pressed = callback
-    elif pin == S1:
+    if pin == S1:
         __s1_pressed = callback
     elif pin == S4:
         __s4_pressed = callback
     # switch 2 and 3
     if pin == S23:
         __s23_pressed = callback
-    elif pin == S2:
+    if pin == S2:
         __s2_pressed = callback
     elif pin == S3:
         __s3_pressed = callback

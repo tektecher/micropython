@@ -5,5 +5,6 @@ import buzzer
 
 
 
-display.clear()
 buzzer.off()
+display.fill(0)
+display.show()

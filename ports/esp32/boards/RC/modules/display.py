@@ -3,6 +3,7 @@ import framebuf
 from machine import Pin, I2C
 import utime
 import math
+
 # register definitions
 SET_CONTRAST = const(0x81)
 SET_ENTIRE_ON = const(0xA4)
@@ -22,7 +23,7 @@ SET_PRECHARGE = const(0xD9)
 SET_VCOM_DESEL = const(0xDB)
 SET_CHARGE_PUMP = const(0x8D)
 
-ADDR = const(0x3D)
+ADDR = const(0x3C)
 pages = 64 // 8
 
 i2c = I2C(0, scl=Pin(22), sda=Pin(21), freq=100000)
@@ -89,7 +90,13 @@ def fill_rect(x, y, w, h, c):
 def blit(fbuf, x, y):
     fbuff.blit(fbuf, x, y)
 
+def image(imageData, x, y):
+    buffer = bytearray(imageData[2:])
+    fbuff.blit(framebuf.FrameBuffer(buffer, int(imageData[0]), int(imageData[1]), framebuf.MONO_HLSB), x, y)
+    buffer = None
+
 #================= this section under Development========================
+#created and ported by Saeed Desouky 
 #=====================start of circle==================
 #empty circle 
 def circle(x,y,r,c): 
@@ -116,6 +123,27 @@ def fill_circle(x,y,r,c):
         fbuff.hline(x-a,y-i,a*2,c) # Upper half
 
 #=====================End of circle==================
+
+#============== Draw sin() and cos() =================
+#================================================================
+#sin()
+def Draw_Sin():
+    factor = 342 /120
+    fbuff.hline(0,32,128,1)    
+    for x in range(0,128):
+        y = int ((math.sin(math.radians(x * factor)))* -30) + 32
+        fbuff.pixel(x,y,1)
+        show()
+#cos()
+def Draw_Cos():
+    factor =  342 /120
+    fbuff.hline(0,32,128,1)    
+    for x in range(0,128):
+        y = int((math.cos(math.radians(x * factor)))* -30) + 32
+        fbuff.pixel(x,y,1)
+        show()
+#============= End of graph ==========================
+
  #=====================start of triangle==================
 # Modified from https://github.com/SpiderMaf/PiPicoDsply/blob/main/filled-triangles.py
 # To work on RC display displays
@@ -177,7 +205,7 @@ def fillBottomFlatTriangle(p1,p2,p3):
 
     for scanlineY in range(p1.Y,p2.Y):
 #        lcd.pixel_span(int(x1), scanlineY, int(x2)-int(x1))   # Switch pixel_span() to hline() / Pimoroni to WS
-        fbuff.hline(int(x1),scanlineY, int(x2)-int(x1),c)
+        fbuff.hline(int(x1),scanlineY, int(x2)-int(x1),1)
         ##fbuff.display()
         utime.sleep(0.1)
         x1 += slope1
@@ -192,7 +220,7 @@ def fillTopFlatTriangle(p1,p2,p3):
 
     for scanlineY in range (p3.Y,p1.Y-1,-1):
 #        fbuff.pixel_span(int(x1), scanlineY, int(x2)-int(x1))  # Switch pixel_span() to hline() / Pimoroni to WS
-        fbuff.hline(int(x1),scanlineY, int(x2)-int(x1),c)
+        fbuff.hline(int(x1),scanlineY, int(x2)-int(x1),1)
         #fbuff.display()
         utime.sleep(0.1)
         x1 -= slope1
@@ -210,81 +238,14 @@ def fill_triangle(x1,y1,x2,y2,x3,y3,c): # Draw filled triangle
     t.fillTri()
 
 # ============== End of Triangles Code ===============
-
-#============== Draw sin() and cos() =================
-
-# def graphs(): # Draw Sine and Cosine graphs
-#     fbuff.fill(0)
-#     #fbuff.display()
-#     factor = 361 /160
-#     fbuff.hline(0,40,160,c=1)    
-#     #fbuff.display()
-#     #sin()
-#     for x in range(0,160):
-#         y = int ((math.sin(math.radians(x * factor)))* -30) + 40
-#         fbuff.pixel(x,y,c=1)
-#         #fbuff.display()
-#     printstring("Sine", 20, 55, 2, 0,0,c)
-#     #fbuff.display()
-#     utime.sleep(3)
-#     #cos()
-#     fbuff.fill(0)
-#     #fbuff.display()
-#     fbuff.hline(0,40,160,c=1)    
-#     #fbuff.display()
-#     for x in range(0,160):
-#         y = int((math.cos(math.radians(x * factor)))* -30) + 40
-#         fbuff.pixel(x,y,c=1)
-#     printstring("Cosine",40,10,2,0,0,c)
-#     #fbuff.display()
-#     utime.sleep(3)
-#     fbuff.fill(0)
-#     #fbuff.display()
-#================================================================
-#sin()
-def Draw_Sin():
-    fbuff.fill(0)
-    factor = 361 /160
-    fbuff.hline(0,40,160,c=1)    
-    for x in range(0,160):
-        y = int ((math.sin(math.radians(x * factor)))* -30) + 40
-        fbuff.pixel(x,y,c=1)
-    utime.sleep(3)   
-
-#cos()
-def Draw_Cos():
-    fbuff.fill(0)
-    factor = 361 /160
-    fbuff.hline(0,40,160,c=1)    
-    for x in range(0,160):
-        y = int((math.cos(math.radians(x * factor)))* -30) + 40
-        fbuff.pixel(x,y,c=1)
-    utime.sleep(3)
-#============= End of graph ==========================
-
-
-
-# will try this if what  is codded is not correct 
-# def circle(x,y,r,color,fill=0):       #A circular function
-#     if(fill==0): empty circle 
-#             for i in range(x-r,x+r+1):
-#                 oled.pixel(i,int(y-math.sqrt(r*r-(x-i)*(x-i))),color)
-#                 oled.pixel(i,int(y+math.sqrt(r*r-(x-i)*(x-i))),color)
-#             for i in range(y-r,y+r+1):
-#                 oled.pixel(int(x-math.sqrt(r*r-(y-i)*(y-i))),i,color)
-#                 oled.pixel(int(x+math.sqrt(r*r-(y-i)*(y-i))),i,color)
-#     else:         filled circle 
-#             for i in range(x-r,x+r+1):
-#                 a=int(math.sqrt(r*r-(x-i)*(x-i)))
-#                 oled.vline(i,y-a,a*2,color)
-
-#             for i in range(y-r,y+r+1):
-#                 a=int(math.sqrt(r*r-(y-i)*(y-i)))
-#                 oled.hline(x-a,i,a*2,color)        
-def image(imageData, x, y):
-    buffer = bytearray(imageData[2:])
-    fbuff.blit(framebuf.FrameBuffer(buffer, int(imageData[0]), int(imageData[1]), framebuf.MONO_HLSB), x, y)
-    buffer = None
+#================ Text scrolling =====================
+#oled width is 128(x) , oled hight 64(y)
+def scroll(text,y):
+  for i in range (0, (129)*2, 1):
+    fbuff.text(text, -128+i, y,1)
+    show()
+    if i!= 128:
+      fill(0)
 
 setupCMD = (
     SET_DISP | 0x00,  # off
@@ -313,3 +274,4 @@ for cmd in setupCMD:
     write_cmd(cmd)
 fill(0)
 show()
+
