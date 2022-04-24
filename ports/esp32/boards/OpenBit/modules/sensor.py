@@ -2,7 +2,7 @@
 
 from machine import Pin, I2C, ADC
 
-TMP75_ADDR = const(0x48)
+TMP75_ADDR = const(0x4C)
 
 i2c1 = I2C(1, scl=Pin(21), sda=Pin(22), freq=100000)
 i2c1.writeto_mem(TMP75_ADDR, 0x01, '\x00')
