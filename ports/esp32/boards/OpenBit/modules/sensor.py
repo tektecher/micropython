@@ -11,10 +11,10 @@ i2c1.writeto_mem(TMP75_ADDR, 0x01, '\x00')
 
 def temperature():
     try:
-        data = i2c1.readfrom_mem(TMP75_ADDR, 0x00, 2)
-        temp = ((data[0] << 8) | data[1]) >> 4
+        h, l = i2c1.readfrom_mem(TMP75_ADDR, 0x00, 2)
+        temp = ((h << 8) | l) >> 4
         temp = temp * 0.0625
-        temp = temp * (-1 if (data[0] & 0x80) != 0 else 1)
+        temp = temp * (-1 if (h & 0x80) != 0 else 1)
         return temp
     except:
         return -99
