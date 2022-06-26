@@ -4,13 +4,13 @@
 #include "mphalport.h"
 #include "mpconfigport.h"
 
-uint8_t SW_Value[2] = { 1, 1 };
+uint8_t SW_Value[4] = { 1, 1, , 1 };
 
 mp_obj_t onPressCallback[2] = { MP_OBJ_NULL, MP_OBJ_NULL };
 mp_obj_t onReleaseCallback[2] = { MP_OBJ_NULL, MP_OBJ_NULL };
 mp_obj_t onPressedCallback[3] = { MP_OBJ_NULL, MP_OBJ_NULL, MP_OBJ_NULL };
-bool pressedFlag[2] = { false, false };
-uint64_t pressStart[2] = { 0, 0 };
+bool pressedFlag[4] = { false, false, false, false };
+uint64_t pressStart[4] = { 0, 0, 0, 0 };
 
 void mp_switch_value_change_handle(int pin, int value) ;
 
@@ -23,7 +23,15 @@ void mp_js_switch_poll() {
         return simSystem.switch[1].value;
     });
 
-    // EM_ASM_INT({ console.log("SW Poll", $0, $1) }, s1_value, s2_value);
+    int s3_value = EM_ASM_INT({
+        return simSystem.switch[2].value;
+    });
+
+    int s4_value = EM_ASM_INT({
+        return simSystem.switch[3].value;
+    });
+ 
+   // EM_ASM_INT({ console.log("SW Poll", $0, $1) }, s1_value, s2_value);
 
     if (SW_Value[0] != s1_value) {
         mp_switch_value_change_handle(1, s1_value);
@@ -31,6 +39,15 @@ void mp_js_switch_poll() {
     if (SW_Value[1] != s2_value) {
         mp_switch_value_change_handle(2, s2_value);
     }
+
+    if (SW_Value[2] != s3_value) {
+        mp_switch_value_change_handle(3, s2_value);
+    }
+
+    if (SW_Value[3] != s4_value) {
+        mp_switch_value_change_handle(4, s2_value);
+    }
+
 }
 
 void mp_switch_value_change_handle(int pin, int value) {
@@ -57,33 +74,50 @@ void mp_switch_value_change_handle(int pin, int value) {
         // mp_sched_schedule(callback, mp_const_none);
         mp_call_function_0(callback);
     }
-
-    if (SW_Value[0] == 1 && SW_Value[1] == 1) {
+    /*s1 and s4 pressed*/
+    if (SW_Value[0] == 1 && SW_Value[3] == 1) {
         callback = MP_OBJ_NULL;
 
         if (pressedFlag[0] && pressedFlag[1]) {
             callback = onPressedCallback[2];
         } else if (pressedFlag[0]) {
             callback = onPressedCallback[0];
-        } else if (pressedFlag[1]) {
+        } else if (pressedFlag[3]) {
             callback = onPressedCallback[1];
         }
         pressedFlag[0] = false;
-        pressedFlag[1] = false;
-
+        pressedFlag[3] = false;
         if (callback != MP_OBJ_NULL) {
             // mp_sched_schedule(callback, mp_const_none);
             mp_call_function_0(callback);
         }
     }
 
+    /*s2 and s3 pressed*/
+    if (SW_Value[1] == 1 && SW_Value[2] == 1) {
+        callback = MP_OBJ_NULL;
+
+        if (pressedFlag[1] && pressedFlag[2]) {
+            callback = onPressedCallback[2];
+        } else if (pressedFlag[0]) {
+            callback = onPressedCallback[0];
+        } else if (pressedFlag[3]) {
+            callback = onPressedCallback[1];
+        }
+        pressedFlag[0] = false;
+        pressedFlag[3] = false;
+        if (callback != MP_OBJ_NULL) {
+            // mp_sched_schedule(callback, mp_const_none);
+            mp_call_function_0(callback);
+        }
+    }
     MICROPY_EVENT_POLL_HOOK
 }
 
 STATIC mp_obj_t switch_value(mp_obj_t pin_obj) {
     mp_int_t pin = mp_obj_get_int(pin_obj);
 
-    if (pin < 1 || pin > 2) {
+    if (pin < 1 || pin > 4) {
         return mp_obj_new_int(0);
     }
 
@@ -94,7 +128,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(switch_value_obj, switch_value);
 STATIC mp_obj_t switch_press(mp_obj_t pin_obj, mp_obj_t callback_obj) {
     mp_int_t pin = mp_obj_get_int(pin_obj);
 
-    if (pin >= 1 && pin <= 2) {
+    if (pin >= 1 && pin <= 4) {
         onPressCallback[pin - 1] = callback_obj != mp_const_none ? callback_obj : MP_OBJ_NULL;
     }
 
@@ -105,7 +139,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(switch_press_obj, switch_press);
 STATIC mp_obj_t switch_release(mp_obj_t pin_obj, mp_obj_t callback_obj) {
     mp_int_t pin = mp_obj_get_int(pin_obj);
 
-    if (pin >= 1 && pin <= 2) {
+    if (pin >= 1 && pin <= 4) {
         onReleaseCallback[pin - 1] = callback_obj != mp_const_none ? callback_obj : MP_OBJ_NULL;
     }
 
@@ -116,7 +150,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(switch_release_obj, switch_release);
 STATIC mp_obj_t switch_pressed(mp_obj_t pin_obj, mp_obj_t callback_obj) {
     mp_int_t pin = mp_obj_get_int(pin_obj);
 
-    if (pin >= 1 && pin <= 3) {
+    if (pin >= 1 && pin <= 5) {
         onPressedCallback[pin - 1] = callback_obj != mp_const_none ? callback_obj : MP_OBJ_NULL;
     }
 
@@ -133,7 +167,10 @@ STATIC const mp_rom_map_elem_t switch_module_globals_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_S1), MP_ROM_INT(0b01) },
     { MP_ROM_QSTR(MP_QSTR_S2), MP_ROM_INT(0b10) },
-    { MP_ROM_QSTR(MP_QSTR_S12), MP_ROM_INT(0b11) },
+    { MP_ROM_QSTR(MP_QSTR_S14), MP_ROM_INT(0b11) },
+    { MP_ROM_QSTR(MP_QSTR_S3), MP_ROM_INT(0b100) },
+    { MP_ROM_QSTR(MP_QSTR_S4), MP_ROM_INT(0b101) },
+    { MP_ROM_QSTR(MP_QSTR_S23), MP_ROM_INT(0b110) },
 };
 STATIC MP_DEFINE_CONST_DICT(switch_module_globals, switch_module_globals_table);
 

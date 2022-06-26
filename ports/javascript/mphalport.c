@@ -34,7 +34,7 @@
 #include "mphalport.h"
 #include "mpconfigport.h"
 
-#include "switch_poll.h"
+#include "boards/RC/switch_poll.h"
 
 void mp_hal_stdout_tx_strn(const char *str, size_t len) {
     mp_js_write(str, len);
@@ -53,7 +53,7 @@ void mp_hal_delay_ms(mp_uint_t ms) {
         mp_js_switch_poll();
         
         if (EM_ASM_INT({ return simSystem.isCharsWaitProcassHasInterruptChar($0) }, mp_interrupt_char)) {
-            mp_keyboard_interrupt();
+            mp_sched_keyboard_interrupt();
         }
 
         emscripten_sleep(1);

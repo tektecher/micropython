@@ -100,8 +100,8 @@ STATIC const mp_raw_code_t *mp_find_frozen_mpy(const char *str, size_t len) {
 
 STATIC mp_import_stat_t mp_frozen_stat_helper(const char *name, const char *str) {
     size_t len = strlen(str);
-
-    for (int i = 0; *name != 0; i++) {
+    while(*name != 0)
+    {
         size_t l = strlen(name);
         if (l >= len && !memcmp(str, name, len)) {
             if (name[len] == 0) {

@@ -25,7 +25,7 @@
  */
 
 // Board-specific definitions
-#include "mpconfigboard.h"
+#include "boards/RC/mpconfigboard.h"
 
 #include <stdint.h>
 
@@ -44,8 +44,8 @@
 #define MICROPY_REPL_EMACS_KEYS             (1)
 #define MICROPY_ERROR_REPORTING             (MICROPY_ERROR_REPORTING_NORMAL)
 #define MICROPY_MODULE_FROZEN_STR           (0)
-#define MICROPY_MODULE_FROZEN_MPY           (1)
-#define MICROPY_QSTR_EXTRA_POOL             mp_qstr_frozen_const_pool
+#define MICROPY_MODULE_FROZEN_MPY           (0)
+// #define MICROPY_QSTR_EXTRA_POOL             (mp_qstr_frozen_const_pool)
 /*#define MICROPY_VFS                         (1)*/
 
 #define MICROPY_QSTR_BYTES_IN_HASH  (2)
@@ -147,10 +147,12 @@ extern const struct _mp_obj_module_t mp_module_utime;
 extern const struct _mp_obj_module_t uos_module;
 extern const struct _mp_obj_module_t mp_module_machine;
 
+
+
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_ROM_QSTR(MP_QSTR_utime), MP_ROM_PTR(&mp_module_utime) }, \
     { MP_ROM_QSTR(MP_QSTR_uos), MP_ROM_PTR(&uos_module) }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_machine), (mp_obj_t)&mp_module_machine }, \
+    //{ MP_OBJ_NEW_QSTR(MP_QSTR_machine), (mp_obj_t)&mp_module_machine }, \
 
 // #define MICROPY_EVENT_POLL_HOOK {ets_event_poll();}
 #if MICROPY_PY_THREAD
