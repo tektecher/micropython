@@ -4,8 +4,8 @@ from machine import Pin
 import _thread
 import utime
 
-S1 = Pin(5, Pin.IN, Pin.PULL_UP)
-S2 = Pin(12, Pin.IN, Pin.PULL_UP)
+S1 = Pin(36, Pin.IN, Pin.PULL_UP)
+S2 = Pin(4, Pin.IN, Pin.PULL_UP)
 
 __s1_press = None
 __s1_release = None

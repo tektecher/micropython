@@ -51,8 +51,9 @@ bpm = 120
 def tone(freq=2093, duration=0.5):
     __buzzer.freq(int(freq))
     __buzzer.duty(int(volume / 100 * 512))
-    sleep(duration)
+    sleep(duration / 2)
     __buzzer.duty(0)
+    sleep(duration / 2)
 
 def on(freq=2000):
     __buzzer.freq(int(freq))
